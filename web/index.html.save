@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUANTUM TWIN — Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+  header { background: #1a1d27; border-bottom: 1px solid #2a2d3a; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: 1px; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #1D9E75; display: inline-block; margin-right: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .metric { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 12px; padding: 20px; }
+  .metric-label { font-size: 13px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-value { font-size: 28px; font-weight: 600; color: #fff; }
+  .metric-value.green { color: #1D9E75; }
+  .metric-value.blue { color: #378ADD; }
+  .metric-value.purple { color: #7F77DD; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media(max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 12px; padding: 20px; }
+  .card h2 { font-size: 14px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+  .client-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2a2d3a; }
+  .client-row:last-child { border-bottom: none; }
+  .client-info .name { font-size: 15px; font-weight: 500; color: #fff; }
+  .client-info .ip { font-size: 12px; color: #666; font-family: monospace; margin-top: 2px; }
+  .badges { display: flex; gap: 6px; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .badge-on { background: #0d3d2a; color: #1D9E75; border: 1px solid #1D9E75; }
+  .badge-off { background: #2a2d3a; color: #888; }
+  .badge-admin { background: #1e1a4a; color: #7F77DD; border: 1px solid #534AB7; }
+  .badge-user { background: #0d2040; color: #378ADD; border: 1px solid #185FA5; }
+  .log-box { background: #0d0f17; border: 1px solid #2a2d3a; border-radius: 8px; padding: 12px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 13px; }
+  .log-line { padding: 3px 0; border-bottom: 1px solid #1a1d27; }
+  .log-time { color: #555; margin-right: 8px; }
+  .log-info { color: #1D9E75; margin-right: 8px; }
+  .log-warn { color: #EF9F27; margin-right: 8px; }
+  .pair-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #2a2d3a; font-size: 14px; }
+  .pair-row:last-child { border-bottom: none; }
+  .pair-name { background: #1e1a4a; color: #7F77DD; padding: 4px 10px; border-radius: 6px; font-weight: 500; }
+  .arrow { color: #1D9E75; font-size: 18px; }
+  .cmd-section { margin-top: 24px; }
+  .cmd-section h2 { font-size: 14px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .cmd-input-area { display: flex; gap: 10px; margin-bottom: 12px; }
+  .cmd-input { flex: 1; background: #0d0f17; border: 1px solid #2a2d3a; border-radius: 8px; padding: 10px 14px; color: #fff; font-family: monospace; font-size: 14px; outline: none; }
+  .cmd-input:focus { border-color: #378ADD; }
+  .cmd-btn { background: #185FA5; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-weight: 500; }
+  .cmd-btn:hover { background: #378ADD; }
+  .quick-cmds { display: flex; flex-wrap: wrap; gap: 8px; }
+  .quick-btn { background: #1a1d27; border: 1px solid #2a2d3a; color: #e0e0e0; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: monospace; }
+  .quick-btn:hover { border-color: #378ADD; color: #378ADD; }
+  .response-box { background: #0d0f17; border: 1px solid #2a2d3a; border-radius: 8px; padding: 12px; min-height: 60px; font-family: monospace; font-size: 13px; color: #1D9E75; margin-top: 12px; white-space: pre-wrap; }
+  .refresh-btn { background: transparent; border: 1px solid #2a2d3a; color: #888; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+  .refresh-btn:hover { border-color: #378ADD; color: #378ADD; }
+  .tag-port { background: #0d2040; color: #378ADD; border: 1px solid #185FA5; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <div><span class="status-dot"></span><span style="font-size:20px;font-weight:600;color:#fff;">QUANTUM TWIN</span> <span style="color:#555;font-size:14px;">— Dashboard</span></div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span class="tag-port">:9090</span>
+    <button class="refresh-btn" onclick="refreshData()">Rafraîchir</button>
+    <div style="text-align:right;">
+      <div style="font-size:13px;font-weight:600;color:#7F77DD;letter-spacing:0.5px;">ENICarthage</div>
+      <div style="font-size:11px;color:#555;margin-top:2px;">Rached · Nour · Maram · Douaa</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Clients connectés</div>
+      <div class="metric-value green" id="nb-clients">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Paires jumeaux</div>
+      <div class="metric-value purple" id="nb-pairs">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">IP serveur</div>
+      <div class="metric-value blue" style="font-size:18px;padding-top:4px;">192.168.0.120</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Watchdog</div>
+      <div class="metric-value green" style="font-size:18px;padding-top:4px;">Actif</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Clients connectés</h2>
+      <div id="clients-list">
+        <div style="color:#555;font-size:13px;">Aucun client pour l'instant...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Paires jumeaux</h2>
+      <div id="pairs-list">
+        <div style="color:#555;font-size:13px;">Aucune paire pour l'instant...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Logs serveur (data/histo.txt)</h2>
+    <div class="log-box" id="log-box">
+      <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">INFO</span>En attente de connexions...</div>
+    </div>
+  </div>
+
+  <div class="cmd-section card" style="margin-top:16px;">
+    <h2>Tester une commande</h2>
+    <div class="cmd-input-area">
+      <input class="cmd-input" id="cmd-input" type="text" placeholder="Ex: CONNECT alice pass123" />
+      <button class="cmd-btn" onclick="sendCmd()">Envoyer</button>
+    </div>
+    <div class="quick-cmds">
+      <button class="quick-btn" onclick="setCmd('CONNECT admin secret123')">CONNECT admin</button>
+      <button class="quick-btn" onclick="setCmd('CONNECT alice pass123')">CONNECT alice</button>
+      <button class="quick-btn" onclick="setCmd('PING')">PING</button>
+      <button class="quick-btn" onclick="setCmd('STATE ON')">STATE ON</button>
+      <button class="quick-btn" onclick="setCmd('STATE OFF')">STATE OFF</button>
+      <button class="quick-btn" onclick="setCmd('SYNC 2')">SYNC 2</button>
+      <button class="quick-btn" onclick="setCmd('LIST')">LIST</button>
+      <button class="quick-btn" onclick="setCmd('QUIT')">QUIT</button>
+    </div>
+    <div class="response-box" id="response-box">Réponse du serveur apparaîtra ici...</div>
+  </div>
+
+</div>
+
+<script>
+var socket = null;
+var connected = false;
+
+function log(msg) {
+  var box = document.getElementById('log-box');
+  var now = new Date();
+  var time = now.toTimeString().slice(0,8);
+  var line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = '<span class="log-time">' + time + '</span>' + msg;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setCmd(cmd) {
+  document.getElementById('cmd-input').value = cmd;
+}
+
+function sendCmd() {
+  var cmd = document.getElementById('cmd-input').value.trim();
+  if (!cmd) return;
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    connectWS(cmd);
+    return;
+  }
+  socket.send(cmd + '\n');
+  log('<span class="log-info">ENVOI</span>' + cmd);
+}
+
+function connectWS(initialCmd) {
+  var resp = document.getElementById('response-box');
+  resp.textContent = 'Connexion au serveur...';
+  try {
+    socket = new WebSocket('ws://192.168.0.120:9090');
+    socket.onopen = function() {
+      connected = true;
+      resp.textContent = 'Connecté !';
+      log('<span class="log-info">INFO</span>Connecté au serveur');
+      document.getElementById('nb-clients').textContent = '1';
+      if (initialCmd) { socket.send(initialCmd + '\n'); }
+    };
+    socket.onmessage = function(e) {
+      resp.textContent = e.data;
+      log('<span class="log-info">RECU</span>' + e.data.trim());
+    };
+    socket.onclose = function() {
+      connected = false;
+      log('<span class="log-warn">WARN</span>Déconnecté du serveur');
+    };
+    socket.onerror = function() {
+      resp.textContent = 'Erreur : Le serveur utilise TCP, pas WebSocket.\nUtilisez le terminal Ubuntu pour tester les commandes :\n\n./client 127.0.0.1 9090';
+      log('<span class="log-warn">NOTE</span>Ce dashboard est visuel - utilisez le terminal pour les commandes');
+    };
+  } catch(e) {
+    resp.textContent = 'Utilisez le terminal Ubuntu : ./client 127.0.0.1 9090';
+  }
+}
+
+function refreshData() {
+  log('<span class="log-info">INFO</span>Rafraîchissement...');
+  loadClientsFile();
+  loadPairsFile();
+  loadHistoFile();
+}
+
+function loadClientsFile() {
+  fetch('data/clients.txt')
+    .then(r => r.text())
+    .then(text => {
+      var lines = text.trim().split('\n').slice(1);
+      var list = document.getElementById('clients-list');
+      if (lines.length === 0 || (lines.length === 1 && lines[0] === '')) {
+        list.innerHTML = '<div style="color:#555;font-size:13px;">Aucun client</div>';
+        document.getElementById('nb-clients').textContent = '0';
+        return;
+      }
+      var html = '';
+      var count = 0;
+      lines.forEach(function(line) {
+        var parts = line.trim().split(/\s+/);
+        if (parts.length >= 3) {
+          count++;
+          var id = parts[0], state = parts[1], status = parts[2];
+          var stateBadge = state === 'ON' ? 'badge-on' : 'badge-off';
+          var statusBadge = status === 'connecte' ? 'badge-user' : 'badge-off';
+          html += '<div class="client-row"><div class="client-info"><div class="name">Client #' + id + '</div><div class="ip">status: ' + status + '</div></div><div class="badges"><span class="badge ' + stateBadge + '">' + state + '</span><span class="badge ' + statusBadge + '">' + status + '</span></div></div>';
+        }
+      });
+      list.innerHTML = html;
+      document.getElementById('nb-clients').textContent = count;
+    })
+    .catch(function() {
+      document.getElementById('clients-list').innerHTML = '<div style="color:#555;font-size:13px;">Lancez le serveur d\'abord</div>';
+    });
+}
+
+function loadPairsFile() {
+  fetch('data/pairs.txt')
+    .then(r => r.text())
+    .then(text => {
+      var lines = text.trim().split('\n').slice(1);
+      var list = document.getElementById('pairs-list');
+      if (lines.length === 0 || (lines.length === 1 && lines[0] === '')) {
+        list.innerHTML = '<div style="color:#555;font-size:13px;">Aucune paire</div>';
+        document.getElementById('nb-pairs').textContent = '0';
+        return;
+      }
+      var html = '';
+      var count = 0;
+      lines.forEach(function(line) {
+        var parts = line.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          count++;
+          html += '<div class="pair-row"><span class="pair-name">Client #' + parts[0] + '</span><span class="arrow">↔</span><span class="pair-name">Client #' + parts[1] + '</span></div>';
+        }
+      });
+      list.innerHTML = html;
+      document.getElementById('nb-pairs').textContent = count;
+    })
+    .catch(function() {});
+}
+
+function loadHistoFile() {
+  fetch('data/histo.txt')
+    .then(r => r.text())
+    .then(text => {
+      var lines = text.trim().split('\n');
+      var box = document.getElementById('log-box');
+      box.innerHTML = '';
+      lines.slice(-20).forEach(function(line) {
+        var div = document.createElement('div');
+        div.className = 'log-line';
+        div.innerHTML = '<span class="log-time">' + line.slice(11,19) + '</span><span class="log-info">HISTO</span>' + line.slice(22);
+        box.appendChild(div);
+      });
+      box.scrollTop = box.scrollHeight;
+    })
+    .catch(function() {});
+}
+
+loadClientsFile();
+loadPairsFile();
+loadHistoFile();
+setInterval(refreshData, 5000);
+</script>
+
+</body>
+</html>
