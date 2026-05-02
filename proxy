@@ -1,0 +1,58 @@
+Sur PC 1, installe le proxy :
+bashpip install websockets
+Crée proxy.py :
+
+
+
+pythonimport asyncio, websockets, socket
+
+async def handler(ws):
+    ip, port = "127.0.0.1", 9090
+    reader, writer = await asyncio.open_connection(ip, port)
+
+    async def tcp_to_ws():
+        while True:
+            data = await reader.read(512)
+            if not data: break
+            await ws.send(data.decode())
+
+    async def ws_to_tcp():
+        async for msg in ws:
+            writer.write((msg + "\n").encode())
+            await writer.drain()
+
+    await asyncio.gather(tcp_to_ws(), ws_to_tcp())
+
+async def main():
+    async with websockets.serve(handler, "0.0.0.0", 8765):
+        print("Proxy WebSocket actif sur :8765")
+        await asyncio.Future()
+
+asyncio.run(main())
+Lance-le :
+bashpython3 proxy.py
+
+Sur ton iPhone, change le port dans l'interface :
+
+IP : 192.168.1.42 (IP du PC 1)
+Port : 8765
+Connecte → les messages arrivent au vrai serveur C
+
+
+Tu veux que je génère aussi le fichier proxy.py à télécharger directement ?Vous avez dit : a chaque fois le serveur dois lancer proxy ?a chaque fois le serveur dois lancer proxy ???18:17Claude a répondu : Oui, malheureusement à chaque fois.Oui, malheureusement à chaque fois. Mais tu peux automatiser ça en une seule commande.
+Modifie ton Makefile, ajoute cette règle :
+makefilerun:
+	./server 9090 &
+	python3 proxy.py
+Comme ça tu lances tout avec une seule commande :
+bashmake run
+Le serveur C et le proxy démarrent ensemble. Ctrl+C arrête tout.
+
+Ou sans Makefile, un simple script start.sh :
+bash#!/bin/bash
+./server 9090 &
+python3 proxy.py
+bashchmod +x start.sh
+./start.sh
+
+C'est la contrainte d'iOS — Safari ne peut pas faire du TCP brut, donc le proxy est obligatoire tant que le serveur C n'intègre pas WebSocket nativement. Une seule ligne à lancer, c'est le mieux qu'on puisse faire.
