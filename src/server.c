@@ -18,6 +18,7 @@
  *    - Watchdog : redémarrage automatique si le serveur plante
  *    - Mode UDP (bonus, argument --udp)
  *    - Profils admin / utilisateur (bonus)
+ *    - Messagerie entre clients (commande MSG)
  * ============================================================
  */
 
@@ -147,7 +148,6 @@ static void load_clients(void)
     pthread_mutex_lock(&mtx_clients);
     FILE *f = fopen(FILE_CLIENTS, "r");
     if (!f) {
-        /* Fichier inexistant : on le crée vide */
         f = fopen(FILE_CLIENTS, "w");
         if (f) { fprintf(f, "ID Etat Statut\n"); fclose(f); }
         pthread_mutex_unlock(&mtx_clients);
@@ -161,7 +161,7 @@ static void load_clients(void)
     while (fgets(line, sizeof(line), f) && g_nb_clients < MAX_CLIENTS) {
         Client *c = &g_clients[g_nb_clients];
         if (sscanf(line, "%d %7s %15s", &c->id, c->state, c->status) == 3) {
-            c->sockfd = -1; /* pas encore connecté */
+            c->sockfd = -1;
             g_nb_clients++;
         }
     }
@@ -195,7 +195,6 @@ static int find_twin(int client_id)
     pthread_mutex_lock(&mtx_pairs);
     FILE *f = fopen(FILE_PAIRS, "r");
     if (!f) {
-        /* Créer pairs.txt vide si absent */
         f = fopen(FILE_PAIRS, "w");
         if (f) { fprintf(f, "Client1 Client2\n"); fclose(f); }
         pthread_mutex_unlock(&mtx_pairs);
@@ -219,7 +218,7 @@ static int find_twin(int client_id)
 /* Crée une paire (client_id, twin_id) dans pairs.txt si elle n'existe pas */
 static int add_pair(int c1, int c2)
 {
-    if (find_twin(c1) != -1) return 0; /* déjà appariés */
+    if (find_twin(c1) != -1) return 0;
 
     pthread_mutex_lock(&mtx_pairs);
     FILE *f = fopen(FILE_PAIRS, "a");
@@ -317,7 +316,6 @@ static int authenticate(const char *username, const char *password, int *is_admi
 {
     FILE *f = fopen(FILE_CREDS, "r");
     if (!f) {
-        /* Pas de fichier = pas d'auth requise, accès user par défaut */
         *is_admin = 0;
         return 1;
     }
@@ -344,6 +342,7 @@ static int authenticate(const char *username, const char *password, int *is_admi
  *    CONNECT [username] [password]
  *    STATE [ON|OFF]
  *    SYNC [twin_id]         (demande d'appariement)
+ *    MSG [target_id] [texte]  (envoi de message)
  *    PING
  *    LIST                   (admin seulement)
  *    QUIT
@@ -351,6 +350,7 @@ static int authenticate(const char *username, const char *password, int *is_admi
  *  Réponses serveur → client :
  *    OK [message]
  *    UPDATE [state]         (propagé au jumeau)
+ *    MSG de=[id] : [texte]  (message reçu)
  *    PONG
  *    ERROR [message]
  *    CLIENTS [liste]        (réponse à LIST)
@@ -399,7 +399,6 @@ static void handle_state(int sockfd, int client_id, const char *args)
 
     update_state(client_id, new_state);
 
-    /* Propager au jumeau s'il existe */
     int twin_id = find_twin(client_id);
     char rep[BUF_SIZE];
 
@@ -454,6 +453,42 @@ static void handle_sync(int sockfd, int client_id, const char *args)
     send(sockfd, rep, strlen(rep), 0);
 }
 
+/* ─── Nouvelle commande MSG ───────────────────────── */
+static void handle_msg(int sockfd, int client_id, const char *args)
+{
+    int  target_id = 0;
+    char text[BUF_SIZE] = {0};
+
+    /* Format attendu : MSG [id_destinataire] [texte libre] */
+    sscanf(args, "%d %479[^\n]", &target_id, text);
+
+    if (target_id <= 0 || strlen(text) == 0) {
+        send(sockfd, "ERROR Usage: MSG [id] [texte]\n", 30, 0);
+        return;
+    }
+    if (target_id == client_id) {
+        send(sockfd, "ERROR Impossible de s'envoyer un message à soi-même\n", 52, 0);
+        return;
+    }
+    if (!get_client(target_id)) {
+        send(sockfd, "ERROR Destinataire inconnu\n", 27, 0);
+        return;
+    }
+
+    /* Construire et envoyer le message au destinataire */
+    char rep[BUF_SIZE];
+    snprintf(rep, sizeof(rep), "MSG de=%d : %s\n", client_id, text);
+
+    if (send_to_client(target_id, rep) > 0) {
+        send(sockfd, "OK MSG envoyé\n", 14, 0);
+        append_histo(client_id, "MSG", text, "envoye");
+        log_info("Client %d → MSG à client %d : %s", client_id, target_id, text);
+    } else {
+        send(sockfd, "ERROR Destinataire hors-ligne\n", 30, 0);
+        append_histo(client_id, "MSG", text, "echec-hors-ligne");
+    }
+}
+
 static void handle_list(int sockfd, int is_admin)
 {
     if (!is_admin) {
@@ -489,16 +524,14 @@ static void *client_thread(void *arg)
     while (1) {
         memset(buf, 0, sizeof(buf));
         ssize_t n = recv(sockfd, buf, sizeof(buf) - 1, 0);
-        if (n <= 0) break; /* déconnexion ou erreur */
+        if (n <= 0) break;
 
-        /* Supprimer \r\n */
         buf[strcspn(buf, "\r\n")] = '\0';
         if (strlen(buf) == 0) continue;
 
         log_info("Reçu [%s] de client %d", buf, ta->client_id);
 
-        /* Parser commande + arguments */
-        char cmd[32] = {0};
+        char cmd[32]      = {0};
         char args[BUF_SIZE] = {0};
         sscanf(buf, "%31s %479[^\n]", cmd, args);
 
@@ -506,7 +539,6 @@ static void *client_thread(void *arg)
             handle_connect(sockfd, args, ta);
 
         } else if (ta->client_id <= 0) {
-            /* Toute autre commande nécessite d'être connecté */
             send(sockfd, "ERROR Non connecté — utilisez CONNECT\n", 38, 0);
 
         } else if (strcmp(cmd, "STATE") == 0) {
@@ -514,6 +546,9 @@ static void *client_thread(void *arg)
 
         } else if (strcmp(cmd, "SYNC") == 0) {
             handle_sync(sockfd, ta->client_id, args);
+
+        } else if (strcmp(cmd, "MSG") == 0) {
+            handle_msg(sockfd, ta->client_id, args);
 
         } else if (strcmp(cmd, "PING") == 0) {
             send(sockfd, "PONG\n", 5, 0);
@@ -552,7 +587,6 @@ static void run_tcp(int port)
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) { perror("socket"); exit(1); }
 
-    /* Réutilisation du port après redémarrage */
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -592,7 +626,7 @@ static void run_tcp(int port)
             close(client_fd);
             free(ta);
         } else {
-            pthread_detach(tid); /* libération automatique à la fin */
+            pthread_detach(tid);
         }
     }
     close(server_fd);
@@ -646,13 +680,7 @@ static void run_udp(int port)
 
 /* ═══════════════════════════════════════════════════
    SECTION 9 — Watchdog (bonus sécurité)
-   ═══════════════════════════════════════════════════
- *
- *  Le watchdog fork() un processus fils (le serveur réel).
- *  Si ce fils plante (signal ou code d'erreur), le père
- *  attend 2 secondes puis le redémarre automatiquement.
- *  Toutes les relances sont journalisées dans watchdog.log.
- * ═══════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════ */
 
 static void watchdog_log(const char *msg)
 {
@@ -682,7 +710,6 @@ static void run_with_watchdog(int port)
         }
 
         if (pid == 0) {
-            /* ─── Processus fils : serveur réel ─── */
             if (g_use_udp)
                 run_udp(port);
             else
@@ -690,12 +717,10 @@ static void run_with_watchdog(int port)
             exit(0);
         }
 
-        /* ─── Processus père : surveillance ─── */
         int status;
         waitpid(pid, &status, 0);
 
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-            /* Arrêt propre */
             watchdog_log("Serveur arrêté proprement");
             printf("Serveur arrêté proprement. Watchdog terminé.\n");
             break;
@@ -726,10 +751,8 @@ int main(int argc, char *argv[])
 {
     int port = DEFAULT_PORT;
 
-    /* Ignorer SIGPIPE pour éviter un crash sur socket fermée */
     signal(SIGPIPE, SIG_IGN);
 
-    /* ─── Analyse des arguments ─── */
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--udp") == 0) {
             g_use_udp = 1;
@@ -745,16 +768,13 @@ int main(int argc, char *argv[])
     printf("║   Port : %-27d║\n", port);
     printf("╚══════════════════════════════════════╝\n");
 
-    /* Initialiser les fichiers de données */
     load_clients();
 
-    /* Initialiser histo.txt s'il n'existe pas */
     {
         FILE *f = fopen(FILE_HISTO, "a");
         if (f) fclose(f);
     }
 
-    /* Lancer avec watchdog */
     run_with_watchdog(port);
 
     return 0;
