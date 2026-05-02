@@ -164,11 +164,9 @@ int main(int argc, char *argv[])
     int         port = DEFAULT_PORT;
     int         udp  = 0;
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--udp") == 0) udp = 1;
-        else if (atoi(argv[i]) > 0)        port = atoi(argv[i]);
-        else                                ip   = argv[i];
-    }
+    if (argc >= 2) ip = argv[1];
+    if (argc >= 3) port = atoi(argv[2]);
+    if (argc >= 4 && strcmp(argv[3], "--udp") == 0) udp = 1;
 
     if (udp) run_udp(ip, port);
     else     run_tcp(ip, port);
