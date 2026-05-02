@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QT-7 · Quantum Twin Dashboard</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/CustomEase.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES
+═══════════════════════════════════════════════ */
+:root {
+  --bg-void: #020408;
+  --bg-deep: #040c14;
+  --bg-panel: rgba(6, 18, 32, 0.72);
+  --bg-panel-hover: rgba(8, 24, 44, 0.88);
+  --border-glow: rgba(0, 212, 255, 0.18);
+  --border-hot: rgba(0, 212, 255, 0.55);
+  --cyan: #00d4ff;
+  --cyan-dim: rgba(0, 212, 255, 0.5);
+  --violet: #a855f7;
+  --violet-dim: rgba(168, 85, 247, 0.5);
+  --electric: #3b82f6;
+  --emerald: #10b981;
+  --amber: #f59e0b;
+  --danger: #ef4444;
+  --text-primary: #e8f4ff;
+  --text-secondary: #7ba7c4;
+  --text-muted: #3d6278;
+  --glow-cyan: 0 0 20px rgba(0,212,255,0.4), 0 0 60px rgba(0,212,255,0.15);
+  --glow-violet: 0 0 20px rgba(168,85,247,0.4), 0 0 60px rgba(168,85,247,0.15);
+  --glow-soft: 0 0 40px rgba(0,212,255,0.08);
+}
+[data-theme="light"] {
+  --bg-void: #e8f0f8;
+  --bg-deep: #d4e4f4;
+  --bg-panel: rgba(220, 236, 252, 0.82);
+  --bg-panel-hover: rgba(200, 224, 248, 0.95);
+  --border-glow: rgba(0, 120, 200, 0.22);
+  --border-hot: rgba(0, 120, 200, 0.55);
+  --cyan: #0077cc;
+  --cyan-dim: rgba(0, 119, 204, 0.5);
+  --violet: #7c3aed;
+  --violet-dim: rgba(124, 58, 237, 0.5);
+  --text-primary: #091826;
+  --text-secondary: #2a5070;
+  --text-muted: #7aa0bc;
+  --glow-cyan: 0 0 20px rgba(0,100,200,0.25), 0 0 60px rgba(0,100,200,0.1);
+  --glow-violet: 0 0 20px rgba(124,58,237,0.25), 0 0 60px rgba(124,58,237,0.1);
+}
+
+/* ═══════════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+
+/* ── Noise Overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.35;
+}
+
+/* ── Ambient Orbs ── */
+.ambient-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  transition: background 0.6s ease;
+}
+.orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,212,255,0.07), transparent 70%); top: -200px; left: -100px; }
+.orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(168,85,247,0.07), transparent 70%); bottom: -100px; right: -100px; }
+.orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(59,130,246,0.05), transparent 70%); top: 40%; left: 40%; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════════
+   GLASSMORPHISM PANEL
+═══════════════════════════════════════════════ */
+.glass {
+  background: var(--bg-panel);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--border-glow);
+  border-radius: 16px;
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
+  position: relative;
+  overflow: hidden;
+}
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+.glass:hover {
+  background: var(--bg-panel-hover);
+  border-color: var(--border-hot);
+  box-shadow: var(--glow-soft);
+}
+
+/* ═══════════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════════ */
+.font-orbitron { font-family: 'Orbitron', monospace; }
+.font-mono { font-family: 'Space Mono', monospace; }
+.text-cyan { color: var(--cyan); }
+.text-violet { color: var(--violet); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════ */
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 64px;
+  background: rgba(2, 4, 8, 0.8);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border-glow);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  transition: background 0.6s;
+}
+[data-theme="light"] header { background: rgba(220,236,252,0.85); }
+
+.header-logo {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  color: var(--cyan);
+  text-shadow: var(--glow-cyan);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-logo .logo-badge {
+  width: 28px; height: 28px;
+  border: 1.5px solid var(--cyan);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  box-shadow: var(--glow-cyan);
+  position: relative;
+}
+.header-logo .logo-badge::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: var(--cyan);
+  border-radius: 2px;
+  opacity: 0.2;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+}
+
+.nav-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-glow);
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+}
+.nav-btn:hover {
+  color: var(--cyan);
+  border-color: var(--cyan-dim);
+  background: rgba(0,212,255,0.06);
+  box-shadow: var(--glow-cyan);
+}
+
+.theme-toggle {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border-glow);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.3s;
+  color: var(--text-secondary);
+}
+.theme-toggle:hover {
+  border-color: var(--cyan-dim);
+  box-shadow: var(--glow-cyan);
+  color: var(--cyan);
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════════════ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto auto;
+  gap: 20px;
+  padding: 84px 28px 28px;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════
+   QUANTUM VISUALIZATION PANEL
+═══════════════════════════════════════════════ */
+.quantum-panel {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  min-height: 580px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+}
+.quantum-canvas-wrap {
+  flex: 1;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0,212,255,0.04) 0%, transparent 70%);
+  border: 1px solid var(--border-glow);
+  min-height: 400px;
+}
+#quantumCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.qpanel-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.qpanel-title {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+.qpanel-title span { color: var(--cyan); }
+
+/* Sync Wave overlay */
+#syncWaveOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Entanglement indicators */
+.entangle-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.eq-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-glow);
+  background: rgba(0,212,255,0.04);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  transition: all 0.3s;
+}
+.eq-chip .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+}
+.eq-chip.active { border-color: var(--cyan-dim); color: var(--cyan); }
+.eq-chip.active .dot { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.eq-chip.violet { border-color: var(--violet-dim); color: var(--violet); }
+.eq-chip.violet .dot { background: var(--violet); box-shadow: 0 0 6px var(--violet); }
+.eq-chip.green .dot { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+.eq-chip.green { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
+
+/* ═══════════════════════════════════════════════
+   RIGHT COLUMN PANELS
+═══════════════════════════════════════════════ */
+.right-col {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ─── Client State Panel ─── */
+.client-panel { padding: 22px; }
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Toggle switch */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toggle-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.toggle {
+  width: 46px; height: 24px;
+  border-radius: 12px;
+  background: rgba(0,212,255,0.12);
+  border: 1px solid var(--border-glow);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.4s;
+}
+.toggle.on {
+  background: rgba(0,212,255,0.22);
+  border-color: var(--cyan-dim);
+  box-shadow: 0 0 16px rgba(0,212,255,0.3);
+}
+.toggle-knob {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.toggle.on .toggle-knob {
+  left: 25px;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+}
+
+/* State grid */
+.state-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.state-cell {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border-glow);
+  transition: all 0.3s;
+}
+.state-cell:hover {
+  border-color: var(--cyan-dim);
+  background: rgba(0,212,255,0.04);
+}
+.state-cell-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.state-cell-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+.state-cell-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Sync latency bar */
+.latency-bar-wrap { margin-top: 14px; }
+.latency-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.latency-track {
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.latency-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  border-radius: 2px;
+  width: 72%;
+  transition: width 0.8s ease;
+}
+
+/* ─── Control Buttons ─── */
+.controls-panel { padding: 20px; }
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ctrl-btn {
+  position: relative;
+  padding: 14px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-glow);
+  background: rgba(0,0,0,0.2);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  overflow: hidden;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ctrl-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,212,255,0.12), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ctrl-btn:hover::before { opacity: 1; }
+.ctrl-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: var(--cyan-dim);
+  box-shadow: var(--glow-cyan), 0 8px 24px rgba(0,0,0,0.3);
+  color: var(--cyan);
+}
+.ctrl-btn:active { transform: scale(0.97); }
+.ctrl-btn .btn-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.ctrl-btn.sync-btn {
+  grid-column: 1 / 3;
+  flex-direction: row;
+  justify-content: center;
+  padding: 16px;
+  font-size: 11px;
+  border-color: rgba(0,212,255,0.3);
+  background: rgba(0,212,255,0.05);
+}
+.ctrl-btn.sync-btn:hover {
+  background: rgba(0,212,255,0.1);
+  box-shadow: 0 0 30px rgba(0,212,255,0.35), 0 8px 24px rgba(0,0,0,0.3);
+}
+
+/* ─── AI Panel ─── */
+.ai-panel { padding: 20px; }
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.ai-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 0 16px rgba(0,212,255,0.4);
+  flex-shrink: 0;
+}
+.ai-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.ai-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  color: var(--text-muted);
+}
+.ai-response {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  min-height: 64px;
+  font-family: 'Inter', sans-serif;
+}
+.ai-cursor {
+  display: inline-block;
+  width: 2px; height: 12px;
+  background: var(--cyan);
+  margin-left: 2px;
+  vertical-align: middle;
+}
+.ai-gen-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--violet-dim);
+  background: rgba(168,85,247,0.06);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--violet);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.ai-gen-btn:hover {
+  background: rgba(168,85,247,0.14);
+  box-shadow: 0 0 20px rgba(168,85,247,0.3);
+  transform: translateY(-2px);
+}
+
+/* ─── Bottom Bar ─── */
+.bottom-row {
+  grid-column: 1 / 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* ─── Live Logs ─── */
+.logs-panel { padding: 20px; }
+.logs-stream {
+  height: 160px;
+  overflow-y: auto;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.log-entry {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+.log-entry.visible { opacity: 1; transform: translateX(0); }
+.log-entry.info { color: var(--text-secondary); border-color: var(--electric); }
+.log-entry.success { color: var(--emerald); border-color: var(--emerald); }
+.log-entry.warn { color: var(--amber); border-color: var(--amber); }
+.log-entry.error { color: var(--danger); border-color: var(--danger); }
+.log-entry .log-time { color: var(--text-muted); margin-right: 8px; }
+
+/* ─── Metrics Panel ─── */
+.metrics-panel { padding: 20px; }
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-glow);
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.metric-bar-wrap { flex: 1; margin: 0 14px; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; }
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1.2s ease;
+}
+.metric-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 42px;
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════
+   SETTINGS MODAL
+═══════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal-box {
+  width: 440px;
+  max-width: 90vw;
+  padding: 32px;
+  transform: translateY(30px) scale(0.95);
+  transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+}
+.modal-overlay.open .modal-box {
+  transform: translateY(0) scale(1);
+}
+.modal-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+.modal-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-glow);
+}
+.setting-row:last-of-type { border-bottom: none; }
+.setting-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.setting-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+}
+.modal-close {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-glow);
+  background: rgba(0,212,255,0.06);
+  color: var(--cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.modal-close:hover {
+  background: rgba(0,212,255,0.14);
+  box-shadow: var(--glow-cyan);
+}
+
+/* ═══════════════════════════════════════════════
+   SCAN LINE DECORATIONS
+═══════════════════════════════════════════════ */
+.scan-corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  pointer-events: none;
+}
+.scan-corner.tl { top: 10px; left: 10px; border-top: 1.5px solid var(--cyan); border-left: 1.5px solid var(--cyan); }
+.scan-corner.tr { top: 10px; right: 10px; border-top: 1.5px solid var(--cyan); border-right: 1.5px solid var(--cyan); }
+.scan-corner.bl { bottom: 10px; left: 10px; border-bottom: 1.5px solid var(--cyan); border-left: 1.5px solid var(--cyan); }
+.scan-corner.br { bottom: 10px; right: 10px; border-bottom: 1.5px solid var(--cyan); border-right: 1.5px solid var(--cyan); }
+
+/* ═══════════════════════════════════════════════
+   FADE-IN ENTRANCE
+═══════════════════════════════════════════════ */
+.entrance { opacity: 0; transform: translateY(20px); }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 960px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .quantum-panel { grid-column: 1; grid-row: auto; }
+  .right-col { grid-column: 1; grid-row: auto; }
+  .bottom-row { grid-column: 1; grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════
+   MISC UTILITY
+═══════════════════════════════════════════════ */
+.separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-hot), transparent);
+  margin: 12px 0;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.badge-cyan { background: rgba(0,212,255,0.1); color: var(--cyan); border: 1px solid var(--cyan-dim); }
+.badge-violet { background: rgba(168,85,247,0.1); color: var(--violet); border: 1px solid var(--violet-dim); }
+.badge-green { background: rgba(16,185,129,0.1); color: var(--emerald); border: 1px solid rgba(16,185,129,0.3); }
+</style>
+</head>
+<body>
+
+<!-- Ambient background orbs -->
+<div class="ambient-orb orb-1" id="orb1"></div>
+<div class="ambient-orb orb-2" id="orb2"></div>
+<div class="ambient-orb orb-3" id="orb3"></div>
+
+<!-- ════════════════════════════════════
+     HEADER
+════════════════════════════════════ -->
+<header id="mainHeader">
+  <div class="header-logo">
+    <div class="logo-badge">QT</div>
+    <span>QUANTUM TWIN</span>
+  </div>
+
+  <div class="flex-1 flex items-center justify-center gap-6">
+    <div class="header-status">
+      <div class="status-dot" id="systemDot"></div>
+      <span id="systemStatus">ENTANGLEMENT ACTIVE</span>
+    </div>
+    <span class="text-muted" style="font-family:'Space Mono',monospace;font-size:9px;">·</span>
+    <div class="header-status">
+      <span id="liveTime" style="color:var(--text-muted)"></span>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <button class="nav-btn entrance" id="navDocs">DOCS</button>
+    <button class="nav-btn entrance" id="navAPI">API v3.7</button>
+    <button class="theme-toggle entrance" id="themeBtn" title="Toggle theme">☀</button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════
+     MAIN DASHBOARD GRID
+════════════════════════════════════ -->
+<main class="dashboard-grid">
+
+  <!-- ── Quantum Visualization Panel ── -->
+  <div class="glass quantum-panel entrance" id="quantumPanel">
+    <div class="scan-corner tl"></div>
+    <div class="scan-corner tr"></div>
+    <div class="scan-corner bl"></div>
+    <div class="scan-corner br"></div>
+
+    <div class="qpanel-label">Subsystem ∙ QT-7 Core</div>
+    <div class="qpanel-title">Quantum <span>Entanglement</span> Field</div>
+
+    <div class="quantum-canvas-wrap" id="canvasWrap">
+      <canvas id="quantumCanvas"></canvas>
+      <svg id="syncWaveOverlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="entangle-bar">
+      <div class="eq-chip active"><div class="dot"></div> CLIENT NODE</div>
+      <div class="eq-chip violet"><div class="dot"></div> SERVER NODE</div>
+      <div class="eq-chip green"><div class="dot"></div> TWIN STATE</div>
+      <div class="eq-chip"><div class="dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div> <span style="color:var(--amber)">LATENCY: <span id="latencyVal">14ms</span></span></div>
+    </div>
+  </div>
+
+  <!-- ── Right Column ── -->
+  <div class="right-col">
+
+    <!-- Client State Panel -->
+    <div class="glass client-panel entrance" id="clientPanel">
+      <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Client State</div>
+          <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text-muted);margin-top:2px">NODE-A ∙ DISTRIBUTED</div>
+        </div>
+        <div class="toggle-wrap">
+          <span class="toggle-label" id="toggleLabel">ONLINE</span>
+          <div class="toggle on" id="clientToggle">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-grid">
+        <div class="state-cell">
+          <div class="state-cell-label">Sync Rate</div>
+          <div class="state-cell-value" id="syncRate">99.8%</div>
+          <div class="state-cell-sub">↑ 0.2% 5m</div>
+        </div>
+        <div class="state-cell">
+          <div class="state-cell-label">State Hash</div>
+          <div class="state-cell-value" style="font-size:11px" id="stateHash">Ω·A4F2</div>
+          <div class="state-cell-sub">SHA-QT3</div>
+        </div>
+        <div class="state-cell">
+          <div class="state-cell-label">Packets</div>
+          <div class="state-cell-value" id="packetCount">24.7K</div>
+          <div class="state-cell-sub">∂t 48/s</div>
+        </div>
+        <div class="state-cell">
+          <div class="state-cell-label">Entanglement</div>
+          <div class="state-cell-value" style="color:var(--violet)" id="entVal">ε·0.97</div>
+          <div class="state-cell-sub">STABLE</div>
+        </div>
+      </div>
+
+      <div class="latency-bar-wrap">
+        <div class="latency-bar-label">
+          <span>SYNC LATENCY</span>
+          <span id="latencyPct">72%</span>
+        </div>
+        <div class="latency-track">
+          <div class="latency-fill" id="latencyFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="glass controls-panel entrance" id="controlsPanel">
+      <div class="panel-header" style="margin-bottom:14px">
+        <div class="panel-title">Control Interface</div>
+        <div class="badge badge-cyan">ARMED</div>
+      </div>
+      <div class="controls-grid">
+        <button class="ctrl-btn sync-btn" id="syncBtn">
+          <span class="btn-icon">⟳</span>
+          <span>INITIATE SYNC</span>
+        </button>
+        <button class="ctrl-btn" id="cameraBtn">
+          <span class="btn-icon">◉</span>
+          <span>CAMERA</span>
+        </button>
+        <button class="ctrl-btn" id="settingsBtn">
+          <span class="btn-icon">⚙</span>
+          <span>SETTINGS</span>
+        </button>
+        <button class="ctrl-btn" id="exportBtn">
+          <span class="btn-icon">↗</span>
+          <span>EXPORT</span>
+        </button>
+        <button class="ctrl-btn" id="lockBtn">
+          <span class="btn-icon">◈</span>
+          <span>LOCK</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Assistant -->
+    <div class="glass ai-panel entrance" id="aiPanel">
+      <div class="ai-header">
+        <div class="ai-avatar">✦</div>
+        <div>
+          <div class="ai-title">QT·AI Assistant</div>
+          <div class="ai-sub">Quantum Intelligence Layer v2.1</div>
+        </div>
+        <div class="badge badge-violet" style="margin-left:auto">READY</div>
+      </div>
+      <div class="separator"></div>
+      <div class="ai-response" id="aiResponse">
+        Quantum entanglement stable. Client-server delta approaching zero.
+        System coherence at 97.2% — recommend maintaining current sync interval.<span class="ai-cursor" id="aiCursor"></span>
+      </div>
+      <button class="ai-gen-btn" id="aiGenBtn">✦ Generate Insight</button>
+    </div>
+
+  </div>
+
+  <!-- ── Bottom Row ── -->
+  <div class="bottom-row entrance" id="bottomRow">
+
+    <!-- Live Logs -->
+    <div class="glass logs-panel">
+      <div class="scan-corner tl"></div>
+      <div class="panel-header" style="margin-bottom:0">
+        <div class="panel-title">Live System Logs</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="status-dot" style="background:var(--emerald);box-shadow:0 0 6px var(--emerald)"></div>
+          <span style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text-muted)">STREAMING</span>
+        </div>
+      </div>
+      <div class="logs-stream" id="logsStream"></div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="glass metrics-panel">
+      <div class="panel-header" style="margin-bottom:14px">
+        <div class="panel-title">Performance Metrics</div>
+        <div class="badge badge-green">NOMINAL</div>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-name">CPU Load</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-fill" id="cpuBar" style="width:0%;background:linear-gradient(90deg,var(--cyan),var(--electric))"></div></div>
+        <span class="metric-val text-cyan" id="cpuVal">--</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Memory</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-fill" id="memBar" style="width:0%;background:linear-gradient(90deg,var(--violet),var(--cyan))"></div></div>
+        <span class="metric-val" style="color:var(--violet)" id="memVal">--</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Throughput</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-fill" id="tpBar" style="width:0%;background:linear-gradient(90deg,var(--emerald),var(--electric))"></div></div>
+        <span class="metric-val" style="color:var(--emerald)" id="tpVal">--</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Coherence</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-fill" id="cohBar" style="width:0%;background:linear-gradient(90deg,var(--amber),var(--danger))"></div></div>
+        <span class="metric-val" style="color:var(--amber)" id="cohVal">--</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Fidelity</span>
+        <div class="metric-bar-wrap"><div class="metric-bar-fill" id="fidBar" style="width:0%;background:linear-gradient(90deg,var(--cyan),var(--emerald))"></div></div>
+        <span class="metric-val text-cyan" id="fidVal">--</span>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ════════════════════════════════════
+     SETTINGS MODAL
+════════════════════════════════════ -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="glass modal-box">
+    <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
+    <div class="scan-corner bl"></div><div class="scan-corner br"></div>
+    <div class="modal-title">SYSTEM SETTINGS</div>
+    <div class="modal-sub">Quantum Twin Configuration Matrix</div>
+    <div class="separator"></div>
+    <div class="setting-row">
+      <span class="setting-label">Sync Protocol</span>
+      <span class="setting-val">QEP-3.7</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Entanglement Mode</span>
+      <span class="setting-val">BIDIRECTIONAL</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Delta Threshold</span>
+      <span class="setting-val">0.00042 Ω</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Compression</span>
+      <span class="setting-val" style="color:var(--violet)">LOSSLESS·Q</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Redundancy Nodes</span>
+      <span class="setting-val">N=3</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Encryption Layer</span>
+      <span class="setting-val" style="color:var(--emerald)">AES-512-QKD</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Build</span>
+      <span class="setting-val" style="color:var(--text-muted)">v3.7.1-alpha</span>
+    </div>
+    <button class="modal-close" id="modalClose">CLOSE PANEL</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════
+   CUSTOM EASE REGISTRATION
+═══════════════════════════════════════════ */
+gsap.registerPlugin(CustomEase);
+CustomEase.create("elastic", "M0,0 C0.14,-0.08 0.22,0.01 0.25,0.1 0.29,0.22 0.34,0.57 0.4,0.7 0.44,0.78 0.5,0.95 0.6,0.99 0.7,1.03 0.75,1.01 1,1");
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const rand = (a, b) => Math.random() * (b - a) + a;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/* ═══════════════════════════════════════════
+   LIVE CLOCK
+═══════════════════════════════════════════ */
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  $('liveTime').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} UTC`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ═══════════════════════════════════════════
+   ENTRANCE ANIMATIONS
+═══════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  const tl = gsap.timeline({ delay: 0.1 });
+
+  // Header items
+  tl.from('#mainHeader', { y: -64, opacity: 0, duration: 0.7, ease: 'power3.out' });
+  tl.from('.nav-btn', { x: 20, opacity: 0, stagger: 0.1, duration: 0.5, ease: 'power2.out' }, '-=0.4');
+
+  // Entrance elements staggered
+  tl.to('.entrance', {
+    opacity: 1,
+    y: 0,
+    stagger: { each: 0.12, from: 'start' },
+    duration: 0.7,
+    ease: 'power3.out'
+  }, '-=0.3');
+
+  // Canvas init after entrance
+  tl.call(() => {
+    initCanvas();
+    startMetrics();
+    startLogs();
+    startAICursor();
+  });
+});
+
+/* ═══════════════════════════════════════════
+   PARALLAX AMBIENT ORBS
+═══════════════════════════════════════════ */
+document.addEventListener('mousemove', e => {
+  const nx = (e.clientX / window.innerWidth - 0.5) * 30;
+  const ny = (e.clientY / window.innerHeight - 0.5) * 30;
+  gsap.to('#orb1', { x: nx, y: ny, duration: 2, ease: 'power1.out' });
+  gsap.to('#orb2', { x: -nx * 0.8, y: -ny * 0.8, duration: 2.5, ease: 'power1.out' });
+  gsap.to('#orb3', { x: nx * 0.4, y: ny * 0.6, duration: 3, ease: 'power1.out' });
+});
+
+/* ═══════════════════════════════════════════
+   QUANTUM CANVAS
+═══════════════════════════════════════════ */
+function initCanvas() {
+  const canvas = $('quantumCanvas');
+  const wrap = $('canvasWrap');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+
+  // ── Nodes ──
+  const nodes = [
+    { label: 'CLIENT', x: 0, y: 0, r: 22, color: '#00d4ff', orbitR: 0, angle: 0, speed: 0 },
+    { label: 'SERVER', x: 0, y: 0, r: 28, color: '#a855f7', orbitR: 0, angle: 0, speed: 0 },
+    { label: 'TWIN',   x: 0, y: 0, r: 18, color: '#10b981', orbitR: 0, angle: 0, speed: 0 },
+  ];
+
+  // ── Particles orbiting each node ──
+  const particles = [];
+  for (let n = 0; n < 3; n++) {
+    const count = [12, 18, 8][n];
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        nodeIdx: n,
+        angle: rand(0, Math.PI * 2),
+        orbitR: rand(36, 60 + n * 12),
+        speed: rand(0.005, 0.018) * (Math.random() < 0.5 ? 1 : -1),
+        r: rand(1, 2.5),
+        alpha: rand(0.3, 1),
+        color: ['#00d4ff','#a855f7','#10b981'][n],
+      });
+    }
+  }
+
+  // ── Floating ambient particles ──
+  const floaters = Array.from({ length: 60 }, () => ({
+    x: rand(0, 1), y: rand(0, 1),
+    vx: rand(-0.0002, 0.0002),
+    vy: rand(-0.0002, 0.0002),
+    r: rand(0.5, 1.8),
+    alpha: rand(0.05, 0.25),
+    color: Math.random() < 0.5 ? '#00d4ff' : '#a855f7',
+  }));
+
+  // ── Energy ring pulses ──
+  const rings = [];
+  function addRing(nx, ny, color) {
+    rings.push({ x: nx, y: ny, r: 5, maxR: 80, alpha: 0.8, color, speed: 1.8 });
+  }
+
+  // ── Sync explosion particles ──
+  const explosionParticles = [];
+  function triggerExplosion(cx, cy) {
+    for (let i = 0; i < 40; i++) {
+      const angle = rand(0, Math.PI * 2);
+      const speed = rand(2, 8);
+      explosionParticles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: rand(1.5, 4),
+        alpha: 1,
+        color: Math.random() < 0.5 ? '#00d4ff' : '#a855f7',
+        life: 1,
+      });
+    }
+    // Rings
+    addRing(cx, cy, '#00d4ff');
+    setTimeout(() => addRing(cx, cy, '#a855f7'), 120);
+    setTimeout(() => addRing(cx, cy, '#10b981'), 240);
+  }
+
+  // expose globally
+  window._triggerExplosion = triggerExplosion;
+
+  // ── Entanglement line dash offset ──
+  let dashOffset = 0;
+  let pulseIntensity = 0; // boosted by sync
+
+  // ── Breathing glow for core ──
+  let breathPhase = 0;
+
+  // ── Hoverable node detection ──
+  let hoveredNode = -1;
+  wrap.addEventListener('mousemove', e => {
+    const rect = wrap.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    hoveredNode = -1;
+    nodes.forEach((n, i) => {
+      const dx = mx - n.x, dy = my - n.y;
+      if (Math.sqrt(dx*dx + dy*dy) < n.r + 14) hoveredNode = i;
+    });
+    wrap.style.cursor = hoveredNode >= 0 ? 'pointer' : 'default';
+  });
+  wrap.addEventListener('mouseleave', () => hoveredNode = -1);
+
+  function draw(t) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const dark = isDark();
+    breathPhase += 0.018;
+    dashOffset -= 0.8;
+    pulseIntensity = Math.max(0, pulseIntensity - 0.01);
+
+    const cx = W / 2, cy = H / 2;
+
+    // Position nodes in triangle
+    const triR = Math.min(W, H) * 0.3;
+    nodes[0].x = cx + Math.cos(-Math.PI/2)       * triR;
+    nodes[0].y = cy + Math.sin(-Math.PI/2)       * triR * 0.85;
+    nodes[1].x = cx + Math.cos(-Math.PI/2 + 2.1) * triR;
+    nodes[1].y = cy + Math.sin(-Math.PI/2 + 2.1) * triR * 0.85;
+    nodes[2].x = cx + Math.cos(-Math.PI/2 + 4.2) * triR;
+    nodes[2].y = cy + Math.sin(-Math.PI/2 + 4.2) * triR * 0.85;
+
+    // ── FLOATING AMBIENT ──
+    floaters.forEach(f => {
+      f.x += f.vx; f.y += f.vy;
+      if (f.x < 0) f.x = 1; if (f.x > 1) f.x = 0;
+      if (f.y < 0) f.y = 1; if (f.y > 1) f.y = 0;
+      ctx.beginPath();
+      ctx.arc(f.x * W, f.y * H, f.r, 0, Math.PI * 2);
+      ctx.fillStyle = f.color + Math.round(f.alpha * 255).toString(16).padStart(2,'0');
+      ctx.fill();
+    });
+
+    // ── ENTANGLEMENT LINES ──
+    for (let a = 0; a < 3; a++) {
+      for (let b = a + 1; b < 3; b++) {
+        const na = nodes[a], nb = nodes[b];
+        const grad = ctx.createLinearGradient(na.x, na.y, nb.x, nb.y);
+        grad.addColorStop(0, na.color + 'cc');
+        grad.addColorStop(0.5, '#ffffff' + Math.round((0.08 + pulseIntensity * 0.3) * 255).toString(16).padStart(2,'0'));
+        grad.addColorStop(1, nb.color + 'cc');
+        ctx.save();
+        ctx.setLineDash([8, 14]);
+        ctx.lineDashOffset = dashOffset + a * 5;
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.2 + pulseIntensity * 2;
+        ctx.shadowColor = na.color;
+        ctx.shadowBlur = 8 + pulseIntensity * 20;
+        ctx.beginPath();
+        ctx.moveTo(na.x, na.y);
+
+        // Slight curve
+        const midX = (na.x + nb.x) / 2 + Math.sin(t * 0.001 + a) * 14;
+        const midY = (na.y + nb.y) / 2 + Math.cos(t * 0.0012 + b) * 10;
+        ctx.quadraticCurveTo(midX, midY, nb.x, nb.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // ── PARTICLES (orbiting nodes) ──
+    particles.forEach(p => {
+      p.angle += p.speed;
+      const n = nodes[p.nodeIdx];
+      const px = n.x + Math.cos(p.angle) * p.orbitR;
+      const py = n.y + Math.sin(p.angle) * p.orbitR;
+      ctx.beginPath();
+      ctx.arc(px, py, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + Math.round(p.alpha * 200).toString(16).padStart(2,'0');
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 6;
+      ctx.fill();
+    });
+
+    // ── RING PULSES ──
+    for (let i = rings.length - 1; i >= 0; i--) {
+      const ring = rings[i];
+      ring.r += ring.speed;
+      ring.alpha = (1 - ring.r / ring.maxR) * 0.7;
+      if (ring.alpha <= 0) { rings.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+      ctx.strokeStyle = ring.color + Math.round(ring.alpha * 255).toString(16).padStart(2,'0');
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = ring.color;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+    }
+
+    // ── NODES ──
+    nodes.forEach((n, i) => {
+      const isHover = hoveredNode === i;
+      const breathScale = i === 1 ? (1 + Math.sin(breathPhase) * 0.12) : 1;
+      const displayR = n.r * breathScale * (isHover ? 1.25 : 1);
+      const pulseExtra = pulseIntensity * 15;
+
+      // Outer glow ring
+      const grd = ctx.createRadialGradient(n.x, n.y, displayR * 0.5, n.x, n.y, displayR * 2.5 + pulseExtra);
+      grd.addColorStop(0, n.color + '44');
+      grd.addColorStop(1, n.color + '00');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, displayR * 2.5 + pulseExtra, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+
+      // Node body
+      const nGrd = ctx.createRadialGradient(n.x - displayR * 0.3, n.y - displayR * 0.3, 1, n.x, n.y, displayR);
+      nGrd.addColorStop(0, '#ffffff');
+      nGrd.addColorStop(0.3, n.color);
+      nGrd.addColorStop(1, n.color + 'aa');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, displayR, 0, Math.PI * 2);
+      ctx.fillStyle = nGrd;
+      ctx.shadowColor = n.color;
+      ctx.shadowBlur = 20 + pulseIntensity * 30 + (isHover ? 20 : 0);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Border ring
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, displayR, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff44';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Label
+      ctx.font = `700 8px 'Orbitron', monospace`;
+      ctx.fillStyle = dark ? '#e8f4ff' : '#091826';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = n.color;
+      ctx.shadowBlur = 10;
+      ctx.fillText(n.label, n.x, n.y + displayR + 14);
+      ctx.shadowBlur = 0;
+    });
+
+    // ── EXPLOSION PARTICLES ──
+    for (let i = explosionParticles.length - 1; i >= 0; i--) {
+      const ep = explosionParticles[i];
+      ep.x += ep.vx;
+      ep.y += ep.vy;
+      ep.vx *= 0.94;
+      ep.vy *= 0.94;
+      ep.life -= 0.025;
+      ep.alpha = ep.life;
+      if (ep.life <= 0) { explosionParticles.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(ep.x, ep.y, ep.r * ep.life, 0, Math.PI * 2);
+      ctx.fillStyle = ep.color + Math.round(ep.alpha * 255).toString(16).padStart(2,'0');
+      ctx.shadowColor = ep.color;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+    }
+
+    // Center crosshair
+    ctx.save();
+    ctx.strokeStyle = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 6]);
+    ctx.beginPath(); ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20); ctx.stroke();
+    ctx.restore();
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+
+  // Auto pulse rings every 3s
+  setInterval(() => {
+    const n = nodes[Math.floor(Math.random() * 3)];
+    addRing(n.x, n.y, n.color);
+  }, 3000);
+}
+
+/* ═══════════════════════════════════════════
+   SYNC BUTTON
+═══════════════════════════════════════════ */
+$('syncBtn').addEventListener('click', function() {
+  // Visual burst on button
+  gsap.to(this, { scale: 0.92, duration: 0.1, yoyo: true, repeat: 1 });
+  gsap.to(this, { boxShadow: '0 0 50px rgba(0,212,255,0.7)', duration: 0.3, yoyo: true, repeat: 1 });
+
+  // Explosion from canvas center
+  const wrap = $('canvasWrap');
+  const canvas = $('quantumCanvas');
+  if (window._triggerExplosion) {
+    window._triggerExplosion(canvas.width / 2, canvas.height / 2);
+  }
+
+  // Pulse intensity boost
+  // (handled via global that canvas reads)
+  document.querySelector('#syncBtn .btn-icon').textContent = '✦';
+  setTimeout(() => { document.querySelector('#syncBtn .btn-icon').textContent = '⟳'; }, 1200);
+
+  // Add log
+  addLog('success', 'SYNC', 'Quantum synchronization initiated → delta Ω·0.0003');
+  addLog('info', 'NODE-A', 'Entanglement re-established ← fidelity 99.7%');
+
+  // Update state hash
+  const hashes = ['Ω·A4F2','Ω·9C1D','Ω·F7E3','Ω·2B8A','Ω·D3F1'];
+  $('stateHash').textContent = hashes[Math.floor(Math.random() * hashes.length)];
+  gsap.from('#stateHash', { color: '#00d4ff', duration: 0.6, ease: 'power2.out' });
+});
+
+/* ═══════════════════════════════════════════
+   CLIENT TOGGLE
+═══════════════════════════════════════════ */
+let clientOnline = true;
+$('clientToggle').addEventListener('click', function() {
+  clientOnline = !clientOnline;
+  this.classList.toggle('on', clientOnline);
+  $('toggleLabel').textContent = clientOnline ? 'ONLINE' : 'OFFLINE';
+  const dot = $('systemDot');
+
+  if (clientOnline) {
+    gsap.to(dot, { backgroundColor: '#10b981', boxShadow: '0 0 8px #10b981', duration: 0.4 });
+    $('systemStatus').textContent = 'ENTANGLEMENT ACTIVE';
+    addLog('success', 'NODE-A', 'Client node back online — resuming sync');
+  } else {
+    gsap.to(dot, { backgroundColor: '#ef4444', boxShadow: '0 0 8px #ef4444', duration: 0.4 });
+    $('systemStatus').textContent = 'NODE OFFLINE';
+    addLog('error', 'NODE-A', 'Client node went offline — sync suspended');
+  }
+  gsap.from('#clientToggle', { scaleX: 1.1, duration: 0.4, ease: 'elastic' });
+});
+
+/* ═══════════════════════════════════════════
+   CAMERA BUTTON
+═══════════════════════════════════════════ */
+$('cameraBtn').addEventListener('click', function() {
+  gsap.to(this, { scale: 0.9, duration: 0.1, yoyo: true, repeat: 1 });
+  addLog('info', 'CAM', 'Shared session snapshot captured → UUID:QT-' + Math.random().toString(36).substr(2,6).toUpperCase());
+  gsap.from('.ai-response', { opacity: 0.4, duration: 0.4 });
+});
+
+/* ═══════════════════════════════════════════
+   SETTINGS MODAL
+═══════════════════════════════════════════ */
+$('settingsBtn').addEventListener('click', () => {
+  $('settingsModal').classList.add('open');
+  gsap.from('.setting-row', { x: 20, opacity: 0, stagger: 0.06, duration: 0.4, ease: 'power2.out' });
+});
+$('modalClose').addEventListener('click', () => {
+  gsap.to('.modal-box', { scale: 0.95, opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => {
+    $('settingsModal').classList.remove('open');
+    gsap.set('.modal-box', { scale: 1, opacity: 1 });
+  }});
+});
+$('settingsModal').addEventListener('click', e => {
+  if (e.target === $('settingsModal')) $('modalClose').click();
+});
+
+$('exportBtn').addEventListener('click', function() {
+  gsap.to(this, { scale: 0.9, duration: 0.1, yoyo: true, repeat: 1 });
+  addLog('info', 'EXPORT', 'State snapshot serialized → qt-state-' + Date.now() + '.json');
+});
+$('lockBtn').addEventListener('click', function() {
+  gsap.to(this, { scale: 0.9, duration: 0.1, yoyo: true, repeat: 1 });
+  addLog('warn', 'LOCK', 'System lock engaged — write access suspended');
+});
+
+/* ═══════════════════════════════════════════
+   DARK / LIGHT MODE
+═══════════════════════════════════════════ */
+$('themeBtn').addEventListener('click', () => {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  gsap.to('body', { opacity: 0.7, duration: 0.2, yoyo: true, repeat: 1 });
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  $('themeBtn').textContent = isDark ? '☾' : '☀';
+  addLog('info', 'UI', `Theme switched to ${isDark ? 'LIGHT' : 'DARK'} mode`);
+});
+
+/* ═══════════════════════════════════════════
+   AI ASSISTANT
+═══════════════════════════════════════════ */
+const aiSuggestions = [
+  "Entanglement coherence holds at 97.2%. Recommend reducing sync interval to 8ms for optimal fidelity.",
+  "Detected micro-drift in CLIENT ↔ TWIN delta. Auto-correction applied. State hash remains stable.",
+  "Throughput peak detected at T+14s. Server node handling 97 packets/s — within safe bounds.",
+  "Quantum decoherence risk LOW. Environmental noise factor: 0.0031 Ω. No action required.",
+  "Bidirectional sync verified. All three nodes converged to shared state Ω·F7E3.",
+  "Anomaly suppressed: twin node briefly diverged by Δ0.0007. Entanglement restored in 2ms.",
+  "Recommendation: increase redundancy to N=5 for defense demo stability. Current N=3 marginal.",
+  "Zero-knowledge proof exchange complete. Identity verified across all quantum channels.",
+];
+let aiIdx = 0;
+let aiTyping = false;
+
+function typeAI(text) {
+  if (aiTyping) return;
+  aiTyping = true;
+  const el = $('aiResponse');
+  const cursor = $('aiCursor');
+  el.innerHTML = '';
+  el.appendChild(cursor);
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i >= text.length) {
+      clearInterval(iv);
+      aiTyping = false;
+      return;
+    }
+    cursor.insertAdjacentText('beforebegin', text[i]);
+    i++;
+  }, 22);
+}
+
+$('aiGenBtn').addEventListener('click', () => {
+  gsap.to('#aiPanel', { borderColor: 'rgba(168,85,247,0.6)', duration: 0.3, yoyo: true, repeat: 1 });
+  gsap.to('.ai-avatar', { rotate: 360, duration: 0.6, ease: 'power2.inOut' });
+  typeAI(aiSuggestions[aiIdx % aiSuggestions.length]);
+  aiIdx++;
+  $('aiPanel').querySelector('.badge').textContent = 'THINKING';
+  setTimeout(() => { $('aiPanel').querySelector('.badge').textContent = 'READY'; }, 1400);
+});
+
+function startAICursor() {
+  gsap.to('#aiCursor', { opacity: 0, duration: 0.5, repeat: -1, yoyo: true, ease: 'none' });
+}
+
+/* ═══════════════════════════════════════════
+   LIVE LOGS
+═══════════════════════════════════════════ */
+const logTemplates = [
+  ['info',    'SYNC',   'Heartbeat transmitted → ACK received in {ms}ms'],
+  ['success', 'NODE-B', 'State delta resolved → fidelity {fid}%'],
+  ['info',    'NET',    'Packet stream active → {pkt} bytes/s'],
+  ['success', 'TWIN',   'Mirror state verified → hash match {hash}'],
+  ['warn',    'LATENCY','Micro-jitter detected {ms}ms → auto-buffered'],
+  ['info',    'QKD',    'Key rotation complete → new epoch {ep}'],
+  ['success', 'COHERENCE', 'Entanglement stable → ε={ent}'],
+  ['info',    'NODE-A', 'Checkpoint saved → snapshot {snap}'],
+];
+
+function addLog(type, src, msg) {
+  const stream = $('logsStream');
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const div = document.createElement('div');
+  div.className = `log-entry ${type}`;
+  div.innerHTML = `<span class="log-time">${time}</span><span style="color:var(--cyan);margin-right:6px">[${src}]</span>${msg}`;
+  stream.appendChild(div);
+  requestAnimationFrame(() => {
+    div.classList.add('visible');
+    stream.scrollTop = stream.scrollHeight;
+  });
+  // Keep max 40 entries
+  while (stream.children.length > 40) stream.removeChild(stream.firstChild);
+}
+
+function startLogs() {
+  const initialLogs = [
+    ['info',    'BOOT',   'Quantum Twin v3.7.1 initializing...'],
+    ['success', 'BOOT',   'All subsystems online — 3 nodes detected'],
+    ['success', 'QKD',    'Key exchange complete → AES-512-QKD active'],
+    ['info',    'SYNC',   'Initial state sync complete — Ω·A4F2'],
+  ];
+  initialLogs.forEach((l, i) => setTimeout(() => addLog(...l), i * 300));
+
+  setInterval(() => {
+    const tpl = logTemplates[Math.floor(Math.random() * logTemplates.length)];
+    const msg = tpl[2]
+      .replace('{ms}', Math.floor(rand(8, 24)))
+      .replace('{fid}', (rand(97, 99.9)).toFixed(1))
+      .replace('{pkt}', Math.floor(rand(800, 3200)))
+      .replace('{hash}', 'Ω·' + Math.random().toString(36).substr(2,4).toUpperCase())
+      .replace('{ep}', Math.floor(rand(100, 999)))
+      .replace('{ent}', rand(0.94, 0.99).toFixed(3))
+      .replace('{snap}', Date.now().toString(36).toUpperCase());
+    addLog(tpl[0], tpl[1], msg);
+  }, 1800);
+}
+
+/* ═══════════════════════════════════════════
+   METRICS
+═══════════════════════════════════════════ */
+function startMetrics() {
+  const metrics = [
+    { bar: 'cpuBar', val: 'cpuVal', base: 38, range: 25, suffix: '%', color: '#00d4ff' },
+    { bar: 'memBar', val: 'memVal', base: 62, range: 15, suffix: '%', color: '#a855f7' },
+    { bar: 'tpBar',  val: 'tpVal',  base: 74, range: 20, suffix: '%', color: '#10b981' },
+    { bar: 'cohBar', val: 'cohVal', base: 92, range: 6,  suffix: '%', color: '#f59e0b' },
+    { bar: 'fidBar', val: 'fidVal', base: 97, range: 2,  suffix: '%', color: '#00d4ff' },
+  ];
+
+  // Animate bars in on load
+  setTimeout(() => {
+    metrics.forEach(m => {
+      const v = m.base + rand(-m.range / 2, m.range / 2);
+      $(m.bar).style.width = v + '%';
+      $(m.val).textContent = v.toFixed(1) + m.suffix;
+    });
+  }, 800);
+
+  setInterval(() => {
+    metrics.forEach(m => {
+      const v = clamp(m.base + rand(-m.range, m.range), 5, 99);
+      $(m.bar).style.width = v + '%';
+      $(m.val).textContent = v.toFixed(1) + m.suffix;
+    });
+    // Update latency
+    const lat = Math.floor(rand(8, 28));
+    $('latencyVal').textContent = lat + 'ms';
+    const pct = Math.floor(rand(55, 85));
+    $('latencyFill').style.width = pct + '%';
+    $('latencyPct').textContent = pct + '%';
+
+    // Update packet count
+    const base = parseFloat($('packetCount').textContent) || 24700;
+    $('packetCount').textContent = ((base + rand(0, 200)) / 1000).toFixed(1) + 'K';
+
+    // Update sync rate
+    $('syncRate').textContent = (rand(99.2, 99.9)).toFixed(1) + '%';
+  }, 3200);
+}
+
+/* ═══════════════════════════════════════════
+   GSAP HOVER MAGNETIC ON CTRL BTNS
+═══════════════════════════════════════════ */
+document.querySelectorAll('.ctrl-btn').forEach(btn => {
+  btn.addEventListener('mousemove', function(e) {
+    const r = this.getBoundingClientRect();
+    const ox = e.clientX - r.left - r.width / 2;
+    const oy = e.clientY - r.top - r.height / 2;
+    gsap.to(this, { x: ox * 0.18, y: oy * 0.18, duration: 0.3, ease: 'power2.out' });
+  });
+  btn.addEventListener('mouseleave', function() {
+    gsap.to(this, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1,0.4)' });
+  });
+});
+
+/* ═══════════════════════════════════════════
+   PANEL HOVER DEPTH
+═══════════════════════════════════════════ */
+document.querySelectorAll('.glass').forEach(p => {
+  p.addEventListener('mouseenter', () => {
+    gsap.to(p, { y: -3, duration: 0.3, ease: 'power2.out' });
+  });
+  p.addEventListener('mouseleave', () => {
+    gsap.to(p, { y: 0, duration: 0.5, ease: 'elastic.out(1,0.5)' });
+  });
+});
+
+</script>
+</body>
+</html>
