@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Quantum Twin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#1D9E75;--teal-d:#0F6E56;--teal-l:#E1F5EE;
+  --gray:#5F5E5A;--gray-l:#F1EFE8;
+  --red:#D85A30;--red-l:#FAECE7;
+  --purple:#534AB7;--purple-l:#EEEDFE;
+  --bg:#fff;--bg2:#f7f6f2;
+  --txt:#1a1a18;--txt2:#5F5E5A;
+  --border:rgba(0,0,0,0.10);--border2:rgba(0,0,0,0.18);
+  --r:14px;--rs:8px;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg2);color:var(--txt);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding-bottom:40px;
+}
+
+/* Header */
+.hdr{
+  width:100%;background:var(--bg);
+  border-bottom:0.5px solid var(--border);
+  padding:14px 18px 10px;
+  display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:10;
+}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--gray);transition:background .3s;flex-shrink:0}
+.dot.on{background:var(--teal)}
+.hdr-title{font-size:15px;font-weight:700}
+.badge{
+  margin-left:auto;font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:20px;
+  background:var(--gray-l);color:var(--gray);transition:all .3s;
+}
+.badge.on{background:var(--teal-l);color:var(--teal-d)}
+
+/* Content */
+.content{width:100%;max-width:480px;padding:14px 14px 0;display:flex;flex-direction:column;gap:12px}
+
+/* Cards */
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.clabel{font-size:10px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:11px}
+
+/* Inputs */
+.field{margin-bottom:10px}
+.field:last-of-type{margin-bottom:0}
+.field label{display:block;font-size:12px;color:var(--txt2);margin-bottom:4px}
+.field input{
+  width:100%;padding:10px 12px;
+  border:0.5px solid var(--border2);border-radius:var(--rs);
+  font-size:15px;background:var(--bg2);color:var(--txt);outline:none;
+  -webkit-appearance:none;
+}
+.field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(29,158,117,.12);background:var(--bg)}
+
+/* Buttons */
+.btn{
+  width:100%;padding:12px;border-radius:var(--rs);
+  border:0.5px solid var(--border2);font-size:14px;font-weight:700;
+  cursor:pointer;background:var(--bg2);color:var(--txt);
+  transition:background .15s,transform .1s;-webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--teal);color:#fff;border-color:var(--teal-d)}
+.btn.primary:active{background:var(--teal-d)}
+.btn.danger{background:var(--red-l);color:var(--red);border-color:var(--red)}
+.btn:disabled{opacity:.35;pointer-events:none}
+.btn2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* State buttons */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sbtn{
+  padding:20px 8px;border-radius:var(--r);border:1.5px solid var(--border);
+  font-size:17px;font-weight:800;cursor:pointer;text-align:center;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;letter-spacing:.04em;
+}
+.sbtn.on-b {background:var(--teal-l);color:var(--teal-d);border-color:#5DCAA5}
+.sbtn.off-b{background:var(--gray-l);color:var(--gray);border-color:#B4B2A9}
+.sbtn.on-b.active {background:var(--teal);color:#fff;border-color:var(--teal-d)}
+.sbtn.off-b.active{background:var(--gray);color:#fff;border-color:#444}
+.sbtn:active{transform:scale(.96)}
+.sbtn:disabled{opacity:.35;pointer-events:none}
+
+/* MSG row */
+.mrow{display:flex;gap:8px;align-items:flex-end}
+.mrow .field{flex:1;margin-bottom:0}
+.mrow .btn{flex-shrink:0;width:auto;padding:10px 16px}
+
+/* Chat bubbles */
+.chat{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;padding-right:2px}
+.bbl{
+  padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.45;
+  max-width:90%;word-break:break-word;
+}
+.bbl.sent{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:3px}
+.bbl.recv{align-self:flex-start;background:var(--bg2);border:0.5px solid var(--border);border-bottom-left-radius:3px}
+.bbl.ok  {align-self:flex-start;background:var(--teal-l);color:var(--teal-d);border:0.5px solid #5DCAA5;border-bottom-left-radius:3px}
+.bbl.err {align-self:flex-start;background:var(--red-l);color:var(--red);border:0.5px solid #F0997B;border-bottom-left-radius:3px}
+.bbl.upd {align-self:flex-start;background:var(--purple-l);color:var(--purple);border:0.5px solid #AFA9EC;border-bottom-left-radius:3px}
+.bbl.sys {align-self:center;background:transparent;color:var(--txt2);font-size:11px;border:none;padding:2px 0}
+
+/* Info rows */
+.irow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+.irow:last-child{border-bottom:none}
+.ikey{color:var(--txt2)}
+.ival{font-weight:700}
+
+.pnote{text-align:center;font-size:11px;color:var(--txt2);margin-top:6px;min-height:16px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="dot" id="hDot"></div>
+  <span class="hdr-title">Quantum Twin</span>
+  <span class="badge" id="hBadge">Déconnecté</span>
+</div>
+
+<div class="content">
+
+  <!-- ─── ÉTAPE 1 : Bridge WebSocket ─── -->
+  <div class="card" id="cardWS">
+    <div class="clabel">Étape 1 — Bridge WebSocket (Termux)</div>
+    <div class="field">
+      <label>IP du téléphone (où tourne ws_bridge.py)</label>
+      <input id="wsIp" type="text" value="127.0.0.1" inputmode="decimal" placeholder="127.0.0.1 ou IP du phone"/>
+    </div>
+    <div class="field">
+      <label>Port bridge (défaut 8765)</label>
+      <input id="wsPort" type="number" value="8765" inputmode="numeric"/>
+    </div>
+    <button class="btn primary" id="btnWS" onclick="connectWS()">Connecter au bridge</button>
+  </div>
+
+  <!-- ─── ÉTAPE 2 : Authentification ─── -->
+  <div class="card" id="cardAuth" style="display:none">
+    <div class="clabel">Étape 2 — Authentification</div>
+    <div class="field">
+      <label>Utilisateur</label>
+      <input id="inUser" type="text" value="alice" autocomplete="username"/>
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input id="inPass" type="password" value="pass123"/>
+    </div>
+    <button class="btn primary" onclick="doConnect()">CONNECT</button>
+  </div>
+
+  <!-- ─── SESSION ─── -->
+  <div class="card" id="cardSession" style="display:none">
+    <div class="clabel">Session</div>
+    <div class="irow"><span class="ikey">Utilisateur</span><span class="ival" id="sUser">—</span></div>
+    <div class="irow"><span class="ikey">ID client</span><span class="ival" id="sId">—</span></div>
+    <div class="irow"><span class="ikey">Rôle</span><span class="ival" id="sRole">—</span></div>
+    <div class="irow"><span class="ikey">Jumeau</span><span class="ival" id="sTwin">Non apparié</span></div>
+  </div>
+
+  <!-- ─── STATE ─── -->
+  <div class="card" id="cardState" style="display:none">
+    <div class="clabel">État — STATE ON / OFF</div>
+    <div class="sgrid">
+      <div class="sbtn on-b"  id="btnON"  onclick="doState('ON')">ON</div>
+      <div class="sbtn off-b active" id="btnOFF" onclick="doState('OFF')">OFF</div>
+    </div>
+  </div>
+
+  <!-- ─── SYNC ─── -->
+  <div class="card" id="cardSync" style="display:none">
+    <div class="clabel">Appairage — SYNC</div>
+    <div class="mrow">
+      <div class="field"><label>ID du jumeau</label><input id="twinId" type="number" placeholder="ex: 2" inputmode="numeric"/></div>
+      <button class="btn primary" onclick="doSync()">SYNC</button>
+    </div>
+  </div>
+
+  <!-- ─── MSG ─── -->
+  <div class="card" id="cardMsg" style="display:none">
+    <div class="clabel">Message — MSG</div>
+    <div class="mrow" style="margin-bottom:8px">
+      <div class="field"><label>ID destinataire</label><input id="msgTo" type="number" placeholder="ex: 2" inputmode="numeric"/></div>
+      <div class="field" style="flex:2"><label>Message</label><input id="msgTxt" type="text" placeholder="Bonjour jumeau !"/></div>
+    </div>
+    <button class="btn primary" onclick="doMsg()">Envoyer MSG</button>
+  </div>
+
+  <!-- ─── ACTIONS ─── -->
+  <div class="card" id="cardActions" style="display:none">
+    <div class="clabel">Actions</div>
+    <div class="btn2" style="margin-bottom:8px">
+      <button class="btn" onclick="doPing()">PING</button>
+      <button class="btn" id="btnList" onclick="doList()">LIST (admin)</button>
+    </div>
+    <button class="btn danger" onclick="doQuit()">Déconnecter — QUIT</button>
+    <div class="pnote" id="pingNote"></div>
+  </div>
+
+  <!-- ─── FIL DE RÉPONSES ─── -->
+  <div class="card">
+    <div class="clabel">Réponses du serveur</div>
+    <div class="chat" id="chat">
+      <div class="bbl sys">En attente de connexion...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var ws = null;
+var myId = '', myRole = '', myTwin = '';
+var curState = 'OFF';
+var t0ping = 0;
+
+/* ─── WebSocket vers le bridge ─── */
+function connectWS() {
+  var ip   = document.getElementById('wsIp').value.trim();
+  var port = document.getElementById('wsPort').value.trim();
+  var url  = 'ws://' + ip + ':' + port;
+
+  addBubble('sys', 'Connexion au bridge ' + url + ' ...');
+  document.getElementById('btnWS').disabled = true;
+
+  ws = new WebSocket(url);
+
+  ws.onopen = function() {
+    addBubble('ok', 'Bridge connecté — tapez CONNECT');
+    document.getElementById('cardWS').style.display   = 'none';
+    document.getElementById('cardAuth').style.display = '';
+    setHeader(true, 'Bridge OK');
+  };
+
+  ws.onmessage = function(e) {
+    var msg = e.data.trim();
+    handleServerMsg(msg);
+  };
+
+  ws.onclose = function() {
+    addBubble('err', 'Bridge déconnecté');
+    setHeader(false, 'Déconnecté');
+    hideSession();
+    document.getElementById('cardWS').style.display = '';
+    document.getElementById('btnWS').disabled = false;
+  };
+
+  ws.onerror = function() {
+    addBubble('err', 'Impossible de joindre le bridge — vérifiez que ws_bridge.py tourne dans Termux');
+    document.getElementById('btnWS').disabled = false;
+  };
+}
+
+/* ─── Envoyer une commande au serveur via bridge ─── */
+function send(cmd) {
+  if (!ws || ws.readyState !== 1) {
+    addBubble('err', 'Non connecté au bridge');
+    return;
+  }
+  addBubble('sent', '→ ' + cmd);
+  ws.send(cmd);
+}
+
+/* ─── Traiter les réponses du serveur ─── */
+function handleServerMsg(msg) {
+  // PONG — calcul ping
+  if (msg === 'PONG') {
+    var ms = Date.now() - t0ping;
+    addBubble('ok', '← PONG (' + ms + ' ms)');
+    document.getElementById('pingNote').textContent = 'Répondu en ' + ms + ' ms';
+    return;
+  }
+  // OK CONNECTED
+  if (msg.startsWith('OK CONNECTED')) {
+    var idM    = msg.match(/id=(\d+)/);
+    var roleM  = msg.match(/role=(\w+)/);
+    myId   = idM   ? idM[1]   : '?';
+    myRole = roleM ? roleM[1] : 'user';
+    document.getElementById('sUser').textContent = document.getElementById('inUser').value;
+    document.getElementById('sId').textContent   = myId;
+    document.getElementById('sRole').textContent = myRole;
+    setHeader(true, 'Connecté · ID ' + myId);
+    showSession();
+    addBubble('ok', '← ' + msg);
+    return;
+  }
+  // UPDATE (reçu du jumeau)
+  if (msg.startsWith('UPDATE')) {
+    addBubble('upd', '← ' + msg + '  ⚡ jumeau');
+    return;
+  }
+  // MSG reçu
+  if (msg.startsWith('MSG de=')) {
+    addBubble('recv', msg);
+    return;
+  }
+  // OK SYNC
+  if (msg.startsWith('OK SYNC')) {
+    var m = msg.match(/paire\((\d+),(\d+)\)/);
+    if (m) {
+      myTwin = m[1] == myId ? m[2] : m[1];
+      document.getElementById('sTwin').textContent = 'ID ' + myTwin + ' ✓';
+    }
+    addBubble('ok', '← ' + msg);
+    return;
+  }
+  // ERROR
+  if (msg.startsWith('ERROR')) {
+    addBubble('err', '← ' + msg);
+    return;
+  }
+  // OK Au revoir → déconnexion
+  if (msg.startsWith('OK Au revoir')) {
+    addBubble('ok', '← ' + msg);
+    setTimeout(function(){ if(ws) ws.close(); }, 400);
+    return;
+  }
+  // Tout le reste (CLIENTS list, OK STATE, etc.)
+  addBubble('ok', '← ' + msg);
+}
+
+/* ─── Commandes ─── */
+function doConnect() {
+  var u = document.getElementById('inUser').value.trim();
+  var p = document.getElementById('inPass').value.trim();
+  send('CONNECT ' + u + ' ' + p);
+}
+
+function doState(s) {
+  send('STATE ' + s);
+  curState = s;
+  document.getElementById('btnON').classList.toggle('active',  s === 'ON');
+  document.getElementById('btnOFF').classList.toggle('active', s === 'OFF');
+}
+
+function doSync() {
+  var id = document.getElementById('twinId').value.trim();
+  if (!id) { addBubble('err', 'Entrez un ID de jumeau'); return; }
+  send('SYNC ' + id);
+}
+
+function doMsg() {
+  var to  = document.getElementById('msgTo').value.trim();
+  var txt = document.getElementById('msgTxt').value.trim();
+  if (!to || !txt) { addBubble('err', 'Remplissez ID et message'); return; }
+  send('MSG ' + to + ' ' + txt);
+  document.getElementById('msgTxt').value = '';
+}
+
+function doPing() {
+  t0ping = Date.now();
+  document.getElementById('pingNote').textContent = '...';
+  send('PING');
+}
+
+function doList() {
+  send('LIST');
+}
+
+function doQuit() {
+  send('QUIT');
+}
+
+/* ─── UI helpers ─── */
+function addBubble(type, text) {
+  var chat = document.getElementById('chat');
+  // vider le message initial
+  if (chat.children.length === 1 && chat.children[0].classList.contains('sys')) {
+    chat.innerHTML = '';
+  }
+  var d = document.createElement('div');
+  d.className = 'bbl ' + type;
+  d.textContent = text;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function setHeader(on, label) {
+  document.getElementById('hDot').className   = 'dot' + (on ? ' on' : '');
+  document.getElementById('hBadge').className = 'badge' + (on ? ' on' : '');
+  document.getElementById('hBadge').textContent = label;
+}
+
+function showSession() {
+  document.getElementById('cardAuth').style.display    = 'none';
+  document.getElementById('cardSession').style.display = '';
+  document.getElementById('cardState').style.display   = '';
+  document.getElementById('cardSync').style.display    = '';
+  document.getElementById('cardMsg').style.display     = '';
+  document.getElementById('cardActions').style.display = '';
+  if (myRole !== 'admin') document.getElementById('btnList').disabled = true;
+}
+
+function hideSession() {
+  ['cardSession','cardState','cardSync','cardMsg','cardActions']
+    .forEach(function(id){ document.getElementById(id).style.display='none'; });
+  myId=''; myRole=''; myTwin=''; curState='OFF';
+  document.getElementById('btnON').classList.remove('active');
+  document.getElementById('btnOFF').classList.add('active');
+}
+</script>
+</body>
+</html>
