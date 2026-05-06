@@ -1,0 +1,170 @@
+# QUANTUM TWIN — Résumé Complet
+
+## Architecture finale
+
+```
+Android/iPhone (Safari/Chrome)
+        │
+        │  wss:// (WebSocket sécurisé)
+        ▼
+cloudflared tunnel (trycloudflare.com)
+        │
+        │  ws:// (WebSocket local)
+        ▼
+proxy.py :8765  ←── pont WebSocket ↔ TCP
+        │
+        │  TCP brut
+        ▼
+server.c :9090  ←── serveur C (Quantum Twin)
+        │
+        ▼
+data/ (clients.txt, pairs.txt, histo.txt)
+```
+
+---
+
+## Pourquoi cette architecture ?
+
+| Problème | Cause | Solution |
+|----------|-------|----------|
+| Safari/Chrome ne peut pas faire TCP brut | Sécurité navigateur | proxy.py (WebSocket → TCP) |
+| PC1 est sur WSL | IP interne non accessible | cloudflared tunnel |
+| ngrok gratuit bloque WebSocket | Limitation plan free | Remplacé par cloudflared |
+| IP WSL change au redémarrage | WSL dynamique | portproxy Windows |
+
+---
+
+## Commandes PC1 — Dans l'ordre
+
+### PowerShell Windows (admin) — une seule fois
+
+```powershell
+# Redirection ports Windows → WSL
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=8080 connectaddress=172.22.141.234
+netsh interface portproxy add v4tov4 listenport=8765 listenaddress=0.0.0.0 connectport=8765 connectaddress=172.22.141.234
+netsh interface portproxy add v4tov4 listenport=9090 listenaddress=0.0.0.0 connectport=9090 connectaddress=172.22.141.234
+
+# Firewall
+netsh advfirewall firewall add rule name="QT8080" dir=in action=allow protocol=TCP localport=8080
+netsh advfirewall firewall add rule name="QT8765" dir=in action=allow protocol=TCP localport=8765
+```
+
+### WSL — 5 terminaux à chaque démarrage
+
+```bash
+# Terminal 1 — Serveur C
+cd ~/quantum_twin
+./server 9090
+
+# Terminal 2 — Proxy WebSocket
+cd ~/quantum_twin
+python3 proxy.py
+
+# Terminal 3 — Serveur HTTP (page HTML)
+cd ~/quantum_twin
+python3 -m http.server 8080
+
+# Terminal 4 — Tunnel WebSocket
+cd ~
+./cloudflared tunnel --url http://localhost:8765
+# → note l'URL : https://XXXX.trycloudflare.com  (URL_WS)
+
+# Terminal 5 — Tunnel HTTP
+cd ~
+./cloudflared tunnel --url http://localhost:8080
+# → note l'URL : https://YYYY.trycloudflare.com  (URL_HTTP)
+```
+
+### Mettre à jour client.html avec la nouvelle URL
+
+```bash
+cd ~/quantum_twin
+python3 -c "
+import urllib.request
+urllib.request.urlretrieve('https://YYYY.trycloudflare.com/client.html','client.html')
+print('OK')
+"
+```
+
+---
+
+## Fichiers créés
+
+| Fichier | Emplacement | Rôle |
+|---------|-------------|------|
+| proxy.py | ~/quantum_twin/ | Pont WebSocket ↔ TCP |
+| client.html | ~/quantum_twin/ | Interface graphique mobile |
+| cloudflared | ~/ | Tunnel HTTPS/WSS gratuit |
+| ngrok | ~/ | Inutilisé (remplacé par cloudflared) |
+
+### Contenu proxy.py
+
+```python
+import asyncio, websockets
+
+async def handler(ws, path=None):
+    reader, writer = await asyncio.open_connection('127.0.0.1', 9090)
+    async def tcp_to_ws():
+        while True:
+            data = await reader.read(512)
+            if not data: break
+            await ws.send(data.decode(errors='ignore'))
+    async def ws_to_tcp():
+        async for msg in ws:
+            writer.write((msg if msg.endswith('\n') else msg + '\n').encode())
+            await writer.drain()
+    done, pending = await asyncio.wait(
+        [asyncio.ensure_future(tcp_to_ws()),
+         asyncio.ensure_future(ws_to_tcp())],
+        return_when=asyncio.FIRST_COMPLETED)
+    for t in pending: t.cancel()
+
+async def main():
+    async with websockets.serve(handler, '0.0.0.0', 8765):
+        print('Proxy WebSocket actif sur :8765')
+        await asyncio.Future()
+
+asyncio.run(main())
+```
+
+---
+
+## Utilisation sur téléphone
+
+**Ouvrir dans Chrome/Safari :**
+```
+https://YYYY.trycloudflare.com/client.html
+```
+
+**Dans l'interface :**
+- IP : `XXXX.trycloudflare.com` (URL tunnel 8765)
+- Port : `443`
+- Utilisateur : `alice` / `bob` / `admin`
+- Mot de passe : `pass123` / `pass456` / `secret123`
+
+---
+
+## Comptes disponibles
+
+| Utilisateur | Mot de passe | Rôle |
+|-------------|--------------|------|
+| admin | secret123 | admin |
+| alice | pass123 | user |
+| bob | pass456 | user |
+
+---
+
+## Problèmes rencontrés
+
+1. **Safari refusait la connexion** → IP WSL non accessible depuis réseau Wi-Fi
+2. **ngrok bloquait WebSocket** → Remplacé par cloudflared
+3. **proxy.py avait le code en double** → Corrigé avec `cat > proxy.py`
+4. **URL cloudflared change à chaque redémarrage** → Limitation plan gratuit, mise à jour manuelle de client.html nécessaire
+5. **360 Total Security bloquait netsh** → Cliquer Allow
+
+---
+
+## Limitation principale
+
+Les URLs `trycloudflare.com` **changent à chaque redémarrage** de cloudflared.
+Solution permanente : créer un compte Cloudflare et utiliser un tunnel nommé avec un domaine fixe.
