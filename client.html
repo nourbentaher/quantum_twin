@@ -190,8 +190,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 <div id="cfg">
   <h3>▸ CONNEXION SERVEUR</h3>
   <div class="row">
-    <input class="inp" id="ip" type="text" placeholder="IP ou domaine" value="pasta-intersection-equipped-served.trycloudflare.com" autocorrect="off" autocapitalize="off"/>
-    <input class="inp port" id="port" type="number" value="443"/>
+    <input class="inp" id="ip" type="text" placeholder="IP ou domaine" value="127.0.0.1" autocorrect="off" autocapitalize="off"/>
+    <input class="inp port" id="port" type="number" value="8765"/>
   </div>
   <div class="row">
     <input class="inp" id="user" type="text" placeholder="Utilisateur" autocorrect="off" autocapitalize="off"/>
@@ -328,8 +328,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 
 <script>
 // ═══ GROQ CONFIG — remplace la clé ici ═══
-var GROQ_KEY = 'METS_TA_NOUVELLE_CLÉ_ICI';
-var GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+var GROQ_KEY = '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';
+var GROQ_URL = 'mettre_api_ici';
 var GROQ_MODEL = 'llama-3.1-8b-instant';
 
 function groqCall(prompt, maxTokens, callback) {
@@ -411,7 +411,9 @@ function doConnect(){
   isConnected=false;simMode=false;dot.className='pulse';
   log('Connexion à '+ip+':'+port+'...','l-f');
   try{
-    ws=new WebSocket('wss://'+ip);
+    var isCloudflare=(ip.includes('trycloudflare')||ip.includes('ngrok')||ip.includes('.io')||port==='443');
+    var wsUrl=isCloudflare?('wss://'+ip):('ws://'+ip+':'+port);
+    ws=new WebSocket(wsUrl);
     ws.onopen=function(){setConnected(ip,port,false);log('[Connecté via WebSocket]','l-f');if(user&&pass)sendCmd('CONNECT '+user+' '+pass);};
     ws.onmessage=function(e){handleServer(e.data)};
     ws.onerror=function(){startSim(ip,port,user,pass)};
@@ -421,27 +423,111 @@ function doConnect(){
   }catch(e){startSim(ip,port,user,pass)}
 }
 function handleServer(data){
-  log('← '+data,'l-o');
+  /* Traiter ligne par ligne */
+  var lines=data.split('\n');
+
+  for(var li=0;li<lines.length;li++){
+    var line=lines[li].trim();
+
+    if(line){
+      handleLine(line);
+    }
+  }
+}
+
+function handleLine(data){
+
+  /* Ne pas afficher les MSG reçus dans le terminal */
+  if(!data.match(/^MSG de=/)){
+    log('← '+data,'l-o');
+  }
+
   var m=data.match(/OK CONNECTED id=(\d+)/);
-  if(m){myId=parseInt(m[1]);log('[Mon ID: '+myId+']','l-f')}
+
+  if(m){
+    myId=parseInt(m[1]);
+    log('[Mon ID: '+myId+']','l-f');
+  }
+
   var s=data.match(/SYNC paire\((\d+),(\d+)\)/);
+
   if(s){
-    twinId=parseInt(s[1])===myId?parseInt(s[2]):parseInt(s[1]);
-    document.getElementById('twin-status').innerHTML='<span style="color:var(--green)">⟳ Jumeau ID: '+twinId+'</span>';
-    toast('Jumeau associé : ID '+twinId);
-    sessionLog.push({time:ts(),type:'sync',text:'Jumeau associé ID '+twinId});
+    twinId=parseInt(s[1])===myId
+      ? parseInt(s[2])
+      : parseInt(s[1]);
+
+    document.getElementById('twin-status').innerHTML=
+      '<span style="color:var(--green)">⟳ Jumeau ID: '+twinId+'</span>';
+
+    toast('✓ Jumeau associé : ID '+twinId);
+
+    sessionLog.push({
+      time:ts(),
+      type:'sync',
+      text:'Jumeau associé ID '+twinId
+    });
+
+    refreshClients();
   }
-  var msgm=data.match(/^MSG (\d+) (.+)$/);
+
+  /* Message reçu */
+  var msgm=data.match(/^MSG de=(\d+) : (.+)$/);
+
   if(msgm){
-    addMsgBubble('De ID '+msgm[1],msgm[2],false);
-    receivedMessages.push({from:'ID '+msgm[1],text:msgm[2],time:ts()});
-    if(!document.querySelector('#msg-page.active')){notifCount++;badge.style.display='inline';badge.textContent=notifCount;toast('✉ Message de ID '+msgm[1]+': '+msgm[2]);}
-    sessionLog.push({time:ts(),type:'msg_in',text:'MSG reçu de ID '+msgm[1]+': '+msgm[2]});
-    if(watchActive)scheduleAutoAnalysis();
+
+    addMsgBubble(
+      'De ID '+msgm[1],
+      msgm[2],
+      false
+    );
+
+    receivedMessages.push({
+      from:'ID '+msgm[1],
+      text:msgm[2],
+      time:ts()
+    });
+
+    notifCount++;
+    badge.style.display='inline';
+    badge.textContent=notifCount;
+
+    toast('✉ Message de ID '+msgm[1]+': '+msgm[2]);
+
+    sessionLog.push({
+      time:ts(),
+      type:'msg_in',
+      text:'MSG reçu de ID '+msgm[1]+': '+msgm[2]
+    });
+
+    if(watchActive){
+      scheduleAutoAnalysis();
+    }
+
+    showTab('msg');
+
+    return;
   }
+
   var upd=data.match(/UPDATE (ON|OFF)/);
-  if(upd){toast('Jumeau → STATE '+upd[1]);sessionLog.push({time:ts(),type:'update',text:'Jumeau STATE '+upd[1]});if(watchActive)scheduleAutoAnalysis();}
-  if(data.includes('clients:')||data.startsWith('OK'))parseList(data);
+
+  if(upd){
+
+    toast('Jumeau → STATE '+upd[1]);
+
+    sessionLog.push({
+      time:ts(),
+      type:'update',
+      text:'Jumeau STATE '+upd[1]
+    });
+
+    if(watchActive){
+      scheduleAutoAnalysis();
+    }
+  }
+
+  if(data.includes('clients:') || data.startsWith('OK')){
+    parseList(data);
+  }
 }
 function parseList(data){
   var matches=data.match(/\[(\d+):(\w+) (\w+) (ON|OFF)\]/g);if(!matches)return;
@@ -497,6 +583,8 @@ function sendMsg(){
   addMsgBubble('Moi → ID '+to,msg,true);
   document.getElementById('msg-inp').value='';
   sessionLog.push({time:ts(),type:'msg_out',text:'MSG envoyé à ID '+to+': '+msg});
+  /* rester dans l'onglet MSG */
+  showTab('msg');
 }
 function addMsgBubble(meta,msg,isOut){
   var hist=document.getElementById('msg-hist');
@@ -507,7 +595,14 @@ function addMsgBubble(meta,msg,isOut){
 }
 function quickTranslate(text){document.getElementById('trl-input').value=text;showTab('ai');setTimeout(function(){showAiTab('translator')},50);}
 function refreshClients(){sendCmd('LIST')}
-function doSync(){var id=document.getElementById('sync-inp').value.trim();if(id)sendCmd('SYNC '+id);}
+function doSync(){
+  var id=document.getElementById('sync-inp').value.trim();
+  if(!id){toast('Entre l\'ID du jumeau');return;}
+  if(!isConnected){toast('Non connecté');return;}
+  if(parseInt(id)===myId){toast('Tu ne peux pas te sync avec toi-même');return;}
+  sendCmd('SYNC '+id);
+  toast('SYNC envoyé vers ID '+id+' ...');
+}
 
 // ═══ MSG AI TRANSLATOR ═══
 var msgAiOpen=false,msgSelectedLang='Français',msgTrlResult='',msgTrlDebounce=null;

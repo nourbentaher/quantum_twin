@@ -1,242 +1,110 @@
-# QUANTUM TWIN — Guide d'installation et d'utilisation
+# QUANTUM TWIN v4 — Guide de démarrage
+
+## Démarrage en 1 commande
+
+```bash
+python3 start.py
+```
+
+Ce script fait tout automatiquement :
+- Compile `src/server.c` → binaire `server`
+- Initialise les fichiers `data/`
+- Lance un serveur HTTP sur le port 8000
+- Lance le bridge WebSocket (ports 8765 + 8766)
+- Lance le serveur C sur le port 9090
+
+---
+
+## Liens à ouvrir dans le navigateur
+
+| Page | URL locale | Usage |
+|------|-----------|-------|
+| **Client** | http://localhost:8000/client.html | Envoyer commandes, messages |
+| **Dashboard** | http://localhost:8000/index.html | Voir les logs temps réel |
+| **Autre PC / Android** | http://[IP_PC]:8000/client.html | Même réseau Wi-Fi |
+
+---
+
+## Connexion depuis client.html
+
+Dans le panneau ⚙ config :
+- **IP** : `127.0.0.1` (local) ou IP du PC (réseau)
+- **Port** : `8765`
+- **Utilisateur / Mot de passe** : voir ci-dessous
+
+### Comptes disponibles
+| Utilisateur | Mot de passe | Rôle |
+|-------------|-------------|------|
+| admin | secret123 | admin |
+| alice | pass123 | user |
+| bob | pass456 | user |
+
+---
+
+## Accès depuis internet (Cloudflare)
+
+```bash
+# Dans un deuxième terminal, après avoir lancé start.py
+cloudflared tunnel --url http://localhost:8765
+```
+
+Copie l'URL générée (ex: `https://xxx.trycloudflare.com`) dans le champ IP de client.html, port `443`.
+
+---
+
+## Corrections v4.1 (SYNC / UPDATE / HISTO)
+
+### Problèmes résolus
+
+| Problème | Cause | Fix appliqué |
+|----------|-------|-------------|
+| SYNC → `ERROR Jumeau inconnu` | Le jumeau devait être connecté au moment du SYNC | Vérification supprimée : la paire est enregistrée même si le jumeau est absent |
+| HISTO vide / fichiers introuvables | Chemins `../data/` invalides si lancé depuis la racine | Chemins corrigés en `data/` (relatif à la racine du projet) |
+| UPDATE jamais reçu | Conséquence directe du SYNC qui échouait | Résolu par le fix SYNC |
+
+### Comment tester SYNC + UPDATE
+
+1. Lancer `python3 start.py` depuis `quantum_twin_v4/`
+2. Ouvrir **deux onglets** sur `http://localhost:8000/client.html`
+3. Onglet A : connectez avec `alice / pass123` → vous obtenez `id=1`
+4. Onglet B : connectez avec `bob / pass456` → vous obtenez `id=2`
+5. Onglet A : tapez `SYNC 2` → réponse `OK SYNC paire(1,2) établie`
+6. Onglet A : tapez `STATE ON` → onglet B reçoit automatiquement `UPDATE ON`
+7. Vérifiez `data/histo.txt` : toutes les actions y sont maintenant enregistrées
+
+---
+
+## Commandes du protocole
+
+| Commande | Description |
+|----------|-------------|
+| `CONNECT alice pass123` | S'authentifier |
+| `PING` | Tester la connexion (réponse : PONG) |
+| `STATE ON` | Changer son état |
+| `STATE OFF` | Changer son état |
+| `SYNC 2` | S'appairer avec le client ID=2 |
+| `MSG 2 Bonjour !` | Envoyer un message au client 2 |
+| `LIST` | Lister les clients (admin uniquement) |
+| `QUIT` | Se déconnecter |
+
+---
+
+## Architecture
+
+```
+[Navigateur PC/Android]
+        ↕ WebSocket :8765
+[bridge.py]  ←→  [server.c :9090]
+        ↕ WebSocket :8766
+[Dashboard index.html]
+        ↕ HTTP :8000
+[start.py → http.server]
+```
+
+---
 
 ## Prérequis
 
-| Appareil   | OS         | Prérequis                          |
-|------------|------------|------------------------------------|
-| PC 1       | Linux/WSL  | gcc, make, git                     |
-| PC 2       | Linux/WSL  | gcc, make, git                     |
-| Android    | Android 7+ | Termux (F-Droid)                   |
-| iPhone     | iOS 14+    | iSH Shell ou client Python simple  |
-
----
-
-## Étape 1 — Installer les outils (PC 1 et PC 2)
-
-```bash
-# Ubuntu / Debian
-sudo apt update
-sudo apt install build-essential git -y
-
-# Vérifier
-gcc --version
-make --version
-```
-
----
-
-## Étape 2 — Récupérer le projet
-
-```bash
-git clone https://github.com/votre-groupe/quantum_twin.git
-cd quantum_twin
-```
-
-Ou décompresser l'archive :
-
-```bash
-unzip Groupe_NomA_NomB_NomC_NomD.zip
-cd quantum_twin
-```
-
----
-
-## Étape 3 — Compiler
-
-```bash
-make all
-```
-
-Ou manuellement :
-
-```bash
-gcc -Wall -g -o server src/server.c -lpthread
-gcc -Wall -g -o client src/client.c -lpthread
-```
-
----
-
-## Étape 4 — Initialiser les fichiers de données
-
-```bash
-make init-data
-```
-
-Crée dans `data/` :
-- `clients.txt` — table des clients
-- `pairs.txt`   — paires de jumeaux
-- `histo.txt`   — journal d'événements
-- `credentials.txt` — identifiants (admin / users)
-
-Comptes par défaut :
-
-| Utilisateur | Mot de passe | Rôle  |
-|-------------|--------------|-------|
-| admin       | secret123    | admin |
-| alice       | pass123      | user  |
-| bob         | pass456      | user  |
-
----
-
-## Étape 5 — Trouver l'IP du serveur (PC 1)
-
-```bash
-ip a | grep "inet " | grep -v 127
-# ou
-hostname -I
-```
-
-Exemple : `192.168.1.42`
-**Tous les appareils doivent être sur le même réseau Wi-Fi.**
-
----
-
-## Étape 6 — Lancer le serveur (PC 1)
-
-### Mode TCP (défaut) avec Watchdog :
-```bash
-./server 9090
-```
-
-### Mode UDP (bonus) :
-```bash
-./server 9090 --udp
-```
-
-Le watchdog redémarre automatiquement le serveur en cas de crash.
-
----
-
-## Étape 7 — Lancer un client (PC 2)
-
-```bash
-./client 192.168.1.42 9090
-```
-
-### Session exemple :
-
-```
-> CONNECT alice pass123
-← OK CONNECTED id=1 role=user
-
-> STATE ON
-← OK STATE=ON (pas de jumeau)
-
-> SYNC 2
-← OK SYNC paire(1,2) établie
-
-> STATE OFF
-← OK STATE=OFF twin=2 notifié
-
-> PING
-← PONG
-
-> QUIT
-← OK Au revoir
-```
-
----
-
-## Étape 8 — Android (Termux)
-
-### Installation Termux :
-1. Télécharger Termux depuis **F-Droid** (pas le Play Store)
-2. Ouvrir Termux et exécuter :
-
-```bash
-pkg update && pkg upgrade -y
-pkg install clang git -y
-```
-
-### Compiler et lancer le client :
-```bash
-git clone https://github.com/votre-groupe/quantum_twin.git
-cd quantum_twin
-gcc -o client src/client.c -lpthread
-./client 192.168.1.42 9090
-```
-
----
-
-## Étape 9 — iPhone (iSH Shell)
-
-### Option A — iSH Shell (App Store gratuit) :
-
-```sh
-apk add gcc musl-dev
-# Copier client.c via AirDrop ou iCloud
-gcc -o client client.c
-./client 192.168.1.42 9090
-```
-
-### Option B — Client Python (plus simple sur iOS) :
-
-Copier le fichier `client_python.py` sur l'iPhone et lancer avec Pythonista ou iSH :
-
-```python
-# client_python.py — déjà inclus dans src/
-python3 src/client_python.py 192.168.1.42 9090
-```
-
----
-
-## Commandes complètes
-
-| Commande              | Description                            | Rôle requis |
-|-----------------------|----------------------------------------|-------------|
-| `CONNECT user pass`   | Authentification                       | tous        |
-| `STATE ON\|OFF`       | Changer son état + notifier le jumeau  | user        |
-| `SYNC [id_jumeau]`    | S'appairer avec un autre client        | user        |
-| `PING`                | Vérifier la connexion                  | tous        |
-| `LIST`                | Lister tous les clients connectés      | admin       |
-| `QUIT`                | Se déconnecter                         | tous        |
-
----
-
-## Scénario de démonstration (soutenance)
-
-```
-Terminal 1 (PC 1) : ./server 9090
-Terminal 2 (PC 2) : ./client 192.168.1.42 9090
-Terminal 3 (Android) : ./client 192.168.1.42 9090
-
-PC 2 :     CONNECT alice pass123   → OK id=1
-Android :  CONNECT bob pass456     → OK id=2
-PC 2 :     SYNC 2                  → paire(1,2) créée
-PC 2 :     STATE ON                → Android reçoit UPDATE ON
-Android :  STATE OFF               → PC 2 reçoit UPDATE OFF
-PC 1 :     admin ouvre un 4e terminal, CONNECT admin secret123
-Admin :    LIST                    → liste tous les clients
-```
-
----
-
-## Watchdog — comportement
-
-Le serveur démarre en mode watchdog (processus père/fils via `fork()`).
-
-- Si le serveur fils **plante** (signal, segfault…), le père attend 2 secondes et le redémarre.
-- Le journal de relances est dans `data/watchdog.log`.
-- Pour arrêter proprement : `Ctrl+C` (le serveur fils quitte avec code 0, le watchdog s'arrête).
-
----
-
-## Structure du projet
-
-```
-quantum_twin/
-├── src/
-│   ├── server.c          — Serveur TCP/UDP parallèle + watchdog
-│   ├── client.c          — Client interactif TCP/UDP
-│   └── client_python.py  — Client Python pour iPhone
-├── data/
-│   ├── clients.txt       — État des clients (persistant)
-│   ├── pairs.txt         — Paires de jumeaux (persistant)
-│   ├── histo.txt         — Journal d'événements
-│   ├── credentials.txt   — Identifiants utilisateurs
-│   └── watchdog.log      — Journal des redémarrages
-├── docs/
-│   └── rapport.docx      — Rapport technique
-├── Makefile
-└── README.md
-```
+- Python 3.7+
+- gcc + make (Linux/WSL/Mac) : `sudo apt install build-essential`
+- `pip install websockets` (fait automatiquement par start.py)

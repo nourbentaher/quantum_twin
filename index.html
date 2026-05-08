@@ -1,894 +1,541 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QUANTUM TWIN — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>QUANTUM TWIN — Dashboard Serveur</title>
 <style>
-  :root {
-    --bg: #020b18;
-    --panel: #060f1e;
-    --border: #0a3060;
-    --accent: #00d4ff;
-    --accent2: #7b2fff;
-    --green: #00ff9f;
-    --red: #ff2d55;
-    --yellow: #ffcc00;
-    --text: #c8e0f0;
-    --muted: #3a5a7a;
-    --glow: 0 0 20px rgba(0,212,255,0.3);
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Rajdhani', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Animated grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Scanline effect */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Header */
-  header {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 32px;
-    background: linear-gradient(135deg, rgba(6,15,30,0.95), rgba(10,30,60,0.9));
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 4px 40px rgba(0,212,255,0.1);
-  }
-
-  .logo-block {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .logo-icon {
-    width: 44px;
-    height: 44px;
-    position: relative;
-  }
-
-  .logo-icon svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  .logo-text h1 {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.3rem;
-    font-weight: 900;
-    color: var(--accent);
-    letter-spacing: 4px;
-    text-shadow: var(--glow);
-  }
-
-  .logo-text p {
-    font-size: 0.7rem;
-    color: var(--muted);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-  }
-
-  .header-center {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    animation: pulse-dot 1.5s ease-in-out infinite;
-  }
-
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--green); }
-    50% { opacity: 0.4; box-shadow: none; }
-  }
-
-  .header-right {
-    text-align: right;
-  }
-
-  .school-name {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--accent2);
-    letter-spacing: 2px;
-  }
-
-  .team-names {
-    font-size: 0.7rem;
-    color: var(--muted);
-    letter-spacing: 1px;
-    margin-top: 2px;
-  }
-
-  /* Clock */
-  #clock {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 1rem;
-    color: var(--accent);
-    text-shadow: var(--glow);
-  }
-
-  /* Main layout */
-  main {
-    position: relative;
-    z-index: 5;
-    padding: 24px 32px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 20px;
-  }
-
-  /* Panel base */
-  .panel {
-    background: linear-gradient(135deg, rgba(6,15,30,0.9), rgba(10,20,45,0.85));
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.3s;
-  }
-
-  .panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.6;
-  }
-
-  .panel:hover {
-    border-color: rgba(0,212,255,0.4);
-  }
-
-  .panel-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: var(--muted);
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .panel-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, var(--border), transparent);
-  }
-
-  /* Stat cards - full width */
-  .stats-row {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-
-  .stat-card {
-    background: linear-gradient(135deg, rgba(6,15,30,0.95), rgba(0,212,255,0.04));
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s;
-  }
-
-  .stat-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--accent);
-    transform: scaleX(0);
-    transition: transform 0.3s;
-  }
-
-  .stat-card:hover::after { transform: scaleX(1); }
-
-  .stat-label {
-    font-size: 0.65rem;
-    letter-spacing: 3px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-
-  .stat-value {
-    font-family: 'Orbitron', monospace;
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: var(--accent);
-    text-shadow: var(--glow);
-    line-height: 1;
-  }
-
-  .stat-value.green { color: var(--green); text-shadow: 0 0 20px rgba(0,255,159,0.4); }
-  .stat-value.red { color: var(--red); text-shadow: 0 0 20px rgba(255,45,85,0.4); }
-  .stat-value.purple { color: var(--accent2); text-shadow: 0 0 20px rgba(123,47,255,0.4); }
-
-  .stat-sub {
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-top: 6px;
-    font-family: 'Share Tech Mono', monospace;
-  }
-
-  /* Clients table */
-  .clients-panel {
-    grid-column: 1 / 3;
-  }
-
-  .table-wrapper {
-    overflow-x: auto;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.78rem;
-  }
-
-  thead th {
-    color: var(--accent);
-    font-size: 0.6rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-  }
-
-  tbody tr {
-    border-bottom: 1px solid rgba(10,48,96,0.4);
-    transition: background 0.2s;
-  }
-
-  tbody tr:hover {
-    background: rgba(0,212,255,0.04);
-  }
-
-  tbody td {
-    padding: 10px 12px;
-    color: var(--text);
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 2px;
-    font-size: 0.65rem;
-    letter-spacing: 2px;
-    font-weight: 600;
-  }
-
-  .badge-on { background: rgba(0,255,159,0.12); color: var(--green); border: 1px solid rgba(0,255,159,0.3); }
-  .badge-off { background: rgba(255,45,85,0.1); color: var(--red); border: 1px solid rgba(255,45,85,0.25); }
-  .badge-synced { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
-  .badge-wait { background: rgba(255,204,0,0.1); color: var(--yellow); border: 1px solid rgba(255,204,0,0.3); }
-
-  /* Pairs panel */
-  .pairs-panel {
-    grid-column: 3;
-  }
-
-  .pair-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(10,48,96,0.4);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.78rem;
-  }
-
-  .pair-item:last-child { border-bottom: none; }
-
-  .pair-node {
-    background: rgba(0,212,255,0.08);
-    border: 1px solid rgba(0,212,255,0.2);
-    border-radius: 2px;
-    padding: 4px 10px;
-    color: var(--accent);
-    font-size: 0.72rem;
-  }
-
-  .pair-arrow {
-    color: var(--accent2);
-    font-size: 1rem;
-  }
-
-  .pair-status {
-    margin-left: auto;
-  }
-
-  /* Logs panel */
-  .logs-panel {
-    grid-column: 1 / 3;
-  }
-
-  .log-container {
-    height: 200px;
-    overflow-y: auto;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.72rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-
-  .log-container::-webkit-scrollbar { width: 4px; }
-  .log-container::-webkit-scrollbar-track { background: transparent; }
-  .log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .log-line {
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(10,48,96,0.2);
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    animation: fadeIn 0.3s ease;
-  }
-
-  @keyframes fadeIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
-
-  .log-time { color: var(--muted); flex-shrink: 0; }
-  .log-level-info { color: var(--accent); }
-  .log-level-warn { color: var(--yellow); }
-  .log-level-err { color: var(--red); }
-  .log-msg { color: var(--text); }
-
-  /* Activity chart */
-  .activity-panel {
-    grid-column: 3;
-  }
-
-  .mini-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
-    height: 80px;
-    margin-top: 8px;
-  }
-
-  .bar {
-    flex: 1;
-    background: linear-gradient(to top, var(--accent2), var(--accent));
-    border-radius: 2px 2px 0 0;
-    opacity: 0.7;
-    transition: all 0.5s ease;
-    min-height: 4px;
-  }
-
-  .bar:hover { opacity: 1; }
-
-  .chart-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 6px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.58rem;
-    color: var(--muted);
-  }
-
-  /* Controls */
-  .control-row {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .btn {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 3px;
-    padding: 10px 20px;
-    border: 1px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    cursor: pointer;
-    border-radius: 2px;
-    text-transform: uppercase;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.2s;
-    z-index: -1;
-  }
-
-  .btn:hover { color: var(--bg); }
-  .btn:hover::before { transform: scaleX(1); }
-  .btn.active { background: rgba(0,212,255,0.1); }
-
-  .refresh-info {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-left: auto;
-  }
-
-  #countdown { color: var(--accent); }
-
-  /* No-data placeholder */
-  .no-data {
-    text-align: center;
-    color: var(--muted);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.75rem;
-    padding: 30px;
-    border: 1px dashed var(--border);
-    border-radius: 4px;
-  }
-
-  /* Connection status bar */
-  .conn-bar {
-    grid-column: 1 / -1;
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    padding: 10px 16px;
-    background: rgba(0,212,255,0.04);
-    border: 1px solid rgba(0,212,255,0.15);
-    border-radius: 4px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--muted);
-  }
-
-  .conn-bar span { color: var(--accent); }
-
-  /* Responsive */
-  @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; padding: 16px; }
-    .stats-row { grid-template-columns: repeat(2,1fr); grid-column: 1; }
-    .clients-panel, .logs-panel, .control-row, .conn-bar { grid-column: 1; }
-    .pairs-panel, .activity-panel { grid-column: 1; }
-  }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020408;--panel:rgba(6,18,32,0.9);--border:rgba(0,212,255,0.18);
+  --cyan:#00d4ff;--green:#00ff88;--amber:#f59e0b;--red:#ef4444;
+  --purple:#a855f7;--blue:#3b82f6;--muted:#3d6278;--text:#e8f4ff;--text2:#7ba7c4;
+  --mono:'Courier New',monospace;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);overflow:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 10% 10%,rgba(0,212,255,0.05),transparent 50%),
+             radial-gradient(ellipse at 90% 90%,rgba(168,85,247,0.05),transparent 50%);
+  pointer-events:none;z-index:0}
+
+/* ── OVERLAY ── */
+#ov{position:fixed;inset:0;background:rgba(2,4,8,0.92);z-index:500;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+#ov-box{background:rgba(4,12,22,0.98);border:1px solid var(--border);border-radius:14px;
+  padding:30px 34px;max-width:400px;width:92%;text-align:center}
+.ov-title{font-size:15px;color:var(--cyan);font-weight:700;letter-spacing:.15em;margin-bottom:6px}
+.ov-sub{font-size:10px;color:var(--muted);margin-bottom:22px;line-height:1.8}
+.ov-label{font-size:10px;color:var(--text2);text-align:left;display:block;margin-bottom:5px}
+.ov-inp{width:100%;background:rgba(0,212,255,0.05);border:1px solid var(--border);border-radius:6px;
+  padding:9px 11px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;margin-bottom:10px}
+.ov-inp:focus{border-color:var(--cyan)}
+.ov-btn{width:100%;padding:10px;background:rgba(0,212,255,0.1);border:1px solid var(--cyan);
+  border-radius:7px;color:var(--cyan);font-family:var(--mono);font-size:12px;cursor:pointer;
+  letter-spacing:.05em;transition:background .15s}
+.ov-btn:hover{background:rgba(0,212,255,0.22)}
+.ov-skip{font-size:10px;color:var(--muted);margin-top:12px;cursor:pointer;text-decoration:underline}
+.ov-skip:hover{color:var(--text2)}
+.ov-accounts{font-size:9px;color:var(--muted);margin-top:8px;line-height:1.9}
+
+/* ── HEADER ── */
+#hdr{position:sticky;top:0;z-index:100;background:rgba(2,4,8,0.96);
+  border-bottom:1px solid var(--border);padding:9px 18px;
+  display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(10px)}
+#srv-dot{width:10px;height:10px;border-radius:50%;background:var(--red);
+  box-shadow:0 0 8px var(--red);flex-shrink:0;transition:all .4s;margin-right:10px}
+#srv-dot.on{background:var(--green);box-shadow:0 0 14px var(--green)}
+#srv-dot.blink{animation:blink 1.1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.hdr-title{font-size:12px;font-weight:700;letter-spacing:.15em;color:var(--cyan)}
+.hdr-sub{font-size:9px;color:var(--muted);margin-top:1px}
+#hdr-right{display:flex;align-items:center;gap:14px}
+#clock{font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:.08em}
+#conn-badge{font-size:10px;padding:2px 8px;border-radius:4px;
+  background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:var(--red)}
+#conn-badge.on{background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);color:var(--green)}
+
+/* ── STATS ── */
+#stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  padding:12px 18px;border-bottom:1px solid var(--border);position:relative;z-index:1}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:11px 13px}
+.sv{font-size:28px;font-weight:700;line-height:1;transition:color .3s}
+.sv.c{color:var(--cyan)}.sv.g{color:var(--green)}.sv.p{color:var(--purple)}.sv.a{color:var(--amber)}
+.sl{font-size:9px;color:var(--muted);margin-top:4px;letter-spacing:.1em}
+.ss{font-size:10px;color:var(--text2);margin-top:3px}
+
+/* ── MAIN GRID ── */
+#main{display:grid;grid-template-columns:1fr 320px;gap:12px;
+  padding:12px 18px;height:calc(100vh - 116px);position:relative;z-index:1;overflow:hidden}
+
+/* ── LOG PANEL ── */
+#lp{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.ph{padding:9px 13px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.pt{font-size:10px;font-weight:700;letter-spacing:.15em;color:var(--cyan)}
+.pc{display:flex;gap:5px;align-items:center}
+#lf{background:rgba(0,212,255,0.05);border:1px solid var(--border);border-radius:4px;
+  padding:3px 7px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none;width:130px}
+#lf:focus{border-color:var(--cyan)}
+.lb{padding:3px 8px;background:rgba(0,0,0,.4);border:1px solid var(--border);
+  border-radius:4px;color:var(--muted);font-family:var(--mono);font-size:10px;cursor:pointer}
+.lb:hover{border-color:var(--cyan);color:var(--cyan)}
+#ls{flex:1;overflow-y:auto;padding:6px 11px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+#ls::-webkit-scrollbar{width:3px}
+#ls::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+#ls-empty{padding:28px;text-align:center;color:var(--muted);font-size:11px;line-height:1.8}
+.le{display:flex;gap:7px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.025);
+  animation:fi .12s ease;font-size:11px;line-height:1.7;word-break:break-word}
+@keyframes fi{from{opacity:0;transform:translateX(-3px)}to{opacity:1}}
+.le-ts{color:var(--muted);font-size:9px;flex-shrink:0;width:52px;padding-top:3px}
+.le-txt{flex:1}
+.le.success .le-txt{color:#00ff88}
+.le.error   .le-txt{color:#ef4444}
+.le.warn    .le-txt{color:#f59e0b}
+.le.state   .le-txt{color:#60a5fa}
+.le.sync    .le-txt{color:#a855f7}
+.le.msg     .le-txt{color:#f472b6}
+.le.disconnect .le-txt{color:#fb923c}
+.le.watchdog .le-txt{color:#00d4ff}
+.le.info    .le-txt{color:#7ba7c4}
+.le.system  .le-txt{color:#00d4ff}
+
+/* ── RIGHT COLUMN ── */
+#rc{display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:0;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+
+/* ── PANELS RIGHT ── */
+.rp{background:var(--panel);border:1px solid var(--border);border-radius:10px;flex-shrink:0}
+.rph{padding:9px 13px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.rphc{font-size:9px;color:var(--muted)}
+
+/* clients table */
+#ctb{width:100%;font-size:10px;border-collapse:collapse}
+#ctb th{padding:5px 9px;color:var(--muted);font-weight:400;letter-spacing:.08em;
+  border-bottom:1px solid var(--border);text-align:left}
+#ctb td{padding:5px 9px;border-bottom:1px solid rgba(255,255,255,0.03)}
+#ctb tr:last-child td{border-bottom:none}
+#ctb tr:hover td{background:rgba(0,212,255,.03)}
+.td-id{color:var(--cyan);font-weight:700}
+.ton{color:var(--green)}.toff{color:var(--muted)}
+.tcon{color:var(--green)}.tcdis{color:var(--red)}
+.ttwin{color:var(--purple)}
+.no-c{padding:13px;text-align:center;color:var(--muted);font-size:10px}
+
+/* pairs */
+#pairs-body{padding:8px 11px;font-size:10px;max-height:120px;overflow-y:auto}
+.pair-row{display:flex;align-items:center;gap:7px;padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,.03)}
+.pair-row:last-child{border-bottom:none}
+.pid{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);
+  border-radius:4px;padding:2px 7px;color:var(--cyan);font-size:11px}
+.parr{color:var(--purple);font-size:14px}
+
+/* histo */
+#histo-body{padding:6px 11px;font-size:10px;max-height:180px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.hr{color:var(--text2);border-bottom:1px solid rgba(255,255,255,.025);
+  padding:2px 0;line-height:1.7}
+.hts{color:var(--muted);font-size:9px;margin-right:5px}
+
+@media(max-width:700px){
+  #main{grid-template-columns:1fr;height:auto;overflow:visible}
+  #rc{display:none}
+  #stats{grid-template-columns:repeat(2,1fr)}
+  html,body{overflow:auto}
+}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo-block">
-    <div class="logo-icon">
-      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="22" cy="22" r="20" stroke="#00d4ff" stroke-width="1" opacity="0.4"/>
-        <circle cx="22" cy="22" r="14" stroke="#7b2fff" stroke-width="1" opacity="0.5"/>
-        <circle cx="22" cy="22" r="4" fill="#00d4ff" opacity="0.9"/>
-        <line x1="22" y1="2" x2="22" y2="12" stroke="#00d4ff" stroke-width="1.5" opacity="0.7"/>
-        <line x1="22" y1="32" x2="22" y2="42" stroke="#00d4ff" stroke-width="1.5" opacity="0.7"/>
-        <line x1="2" y1="22" x2="12" y2="22" stroke="#00d4ff" stroke-width="1.5" opacity="0.7"/>
-        <line x1="32" y1="22" x2="42" y2="22" stroke="#00d4ff" stroke-width="1.5" opacity="0.7"/>
-        <line x1="8" y1="8" x2="15" y2="15" stroke="#7b2fff" stroke-width="1" opacity="0.5"/>
-        <line x1="29" y1="29" x2="36" y2="36" stroke="#7b2fff" stroke-width="1" opacity="0.5"/>
-        <line x1="36" y1="8" x2="29" y2="15" stroke="#7b2fff" stroke-width="1" opacity="0.5"/>
-        <line x1="8" y1="36" x2="15" y2="29" stroke="#7b2fff" stroke-width="1" opacity="0.5"/>
-      </svg>
+<!-- OVERLAY -->
+<div id="ov">
+  <div id="ov-box">
+    <div class="ov-title">● QUANTUM TWIN — DASHBOARD</div>
+    <div class="ov-sub">
+      Connexion au bridge de logs (port 8766)<br>
+      Lance d'abord : <code style="color:var(--cyan)">python3 start.py</code>
     </div>
-    <div class="logo-text">
-      <h1>QUANTUM TWIN</h1>
-      <p>Serveur Central — Dashboard</p>
+    <label class="ov-label">Adresse du bridge (ip:port ou domaine cloudflare)</label>
+    <input class="ov-inp" id="ov-addr" value="127.0.0.1:8766"
+           autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    <button class="ov-btn" onclick="connectDashboard()">▶ CONNECTER AU DASHBOARD</button>
+    <div class="ov-accounts">
+      Comptes : admin/secret123 &nbsp;|&nbsp; alice/pass123 &nbsp;|&nbsp; bob/pass456
+    </div>
+    <div class="ov-skip" onclick="skipOverlay()">Ignorer — mode démo (données simulées)</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div style="display:flex;align-items:center">
+    <div id="srv-dot" class="blink"></div>
+    <div>
+      <div class="hdr-title">QUANTUM TWIN — DASHBOARD SERVEUR</div>
+      <div class="hdr-sub" id="hdr-sub">En attente de connexion...</div>
     </div>
   </div>
-
-  <div class="header-center">
-    <div class="status-dot"></div>
-    <span id="server-status">SERVEUR ACTIF</span>
-    &nbsp;|&nbsp;
-    PORT: <span style="color:var(--accent)">9090</span>
-    &nbsp;|&nbsp;
+  <div id="hdr-right">
+    <div id="conn-badge">● DÉCONNECTÉ</div>
     <div id="clock">--:--:--</div>
   </div>
+</div>
 
-  <div class="header-right">
-    <div class="school-name">ENICarthage</div>
-    <div class="team-names">Rached · Nour · Maram · Douaa</div>
-    <div class="team-names" style="color:var(--muted);font-size:0.6rem;margin-top:2px">PSR 2025–2026</div>
-  </div>
-</header>
+<!-- STATS -->
+<div id="stats">
+  <div class="stat"><div class="sv g" id="s-cli">0</div><div class="sl">CLIENTS CONNECTÉS</div><div class="ss" id="s-cli-s">Aucun actif</div></div>
+  <div class="stat"><div class="sv p" id="s-pairs">0</div><div class="sl">PAIRES ACTIVES</div><div class="ss" id="s-pairs-s">Jumeaux sync</div></div>
+  <div class="stat"><div class="sv a" id="s-evts">0</div><div class="sl">ÉVÉNEMENTS</div><div class="ss" id="s-evts-s">Total session</div></div>
+  <div class="stat"><div class="sv c" id="s-up">--:--</div><div class="sl">UPTIME BRIDGE</div><div class="ss" id="s-logs-c">0 logs reçus</div></div>
+</div>
 
-<main>
+<!-- MAIN -->
+<div id="main">
 
-  <!-- Connection info bar -->
-  <div class="conn-bar">
-    <span>⬡</span>
-    IP Serveur : <span>192.168.0.120</span>
-    &nbsp;|&nbsp; IP WSL : <span>172.22.141.234</span>
-    &nbsp;|&nbsp; Port : <span>9090</span>
-    &nbsp;|&nbsp; Connexion clients :
-    <span>./client 192.168.0.120 9090</span>
-  </div>
-
-  <!-- Stats -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-label">Clients connectés</div>
-      <div class="stat-value green" id="stat-clients">0</div>
-      <div class="stat-sub" id="stat-clients-detail">Aucun client actif</div>
+  <!-- LOG STREAM -->
+  <div id="lp">
+    <div class="ph">
+      <div class="pt">● LOGS SERVEUR TEMPS RÉEL</div>
+      <div class="pc">
+        <input id="lf" placeholder="Filtrer logs..." oninput="applyFilter(this.value)"/>
+        <button class="lb" onclick="clearLogs()">VIDER</button>
+        <button class="lb" id="asbtn" onclick="toggleAS()">AUTO▼</button>
+      </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Paires actives</div>
-      <div class="stat-value purple" id="stat-pairs">0</div>
-      <div class="stat-sub">Jumeaux synchronisés</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">État ON</div>
-      <div class="stat-value green" id="stat-on">0</div>
-      <div class="stat-sub">Clients en état actif</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Évènements</div>
-      <div class="stat-value" id="stat-events">0</div>
-      <div class="stat-sub">Total historique</div>
-    </div>
-  </div>
-
-  <!-- Clients table -->
-  <div class="panel clients-panel">
-    <div class="panel-title">⬡ Clients connectés</div>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Identifiant</th>
-            <th>État</th>
-            <th>Statut</th>
-            <th>Jumeau</th>
-          </tr>
-        </thead>
-        <tbody id="clients-body">
-          <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;">
-            Aucun client — Connectez un client avec :<br>
-            <span style="color:var(--accent)">./client 127.0.0.1 9090</span>
-            puis <span style="color:var(--accent)">CONNECT alice pass123</span>
-          </td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Pairs -->
-  <div class="panel pairs-panel">
-    <div class="panel-title">⬡ Jumeaux numériques</div>
-    <div id="pairs-container">
-      <div class="no-data">Aucune paire<br>Utilisez <span style="color:var(--accent)">SYNC</span></div>
-    </div>
-  </div>
-
-  <!-- Logs -->
-  <div class="panel logs-panel">
-    <div class="panel-title">⬡ Journal d'activité (histo.txt)</div>
-    <div class="log-container" id="log-container">
-      <div style="color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:0.72rem;padding:20px;text-align:center">
-        En attente d'événements...
+    <div id="ls">
+      <div id="ls-empty">
+        📡&nbsp; En attente du serveur C...<br>
+        Lance <code style="color:var(--cyan)">python3 start.py</code> puis connecte-toi ci-dessus.
       </div>
     </div>
   </div>
 
-  <!-- Activity chart -->
-  <div class="panel activity-panel">
-    <div class="panel-title">⬡ Activité (7 dernières heures)</div>
-    <div class="mini-chart" id="mini-chart">
-      <div class="bar" style="height:10%"></div>
-      <div class="bar" style="height:10%"></div>
-      <div class="bar" style="height:10%"></div>
-      <div class="bar" style="height:10%"></div>
-      <div class="bar" style="height:10%"></div>
-      <div class="bar" style="height:10%"></div>
-      <div class="bar" style="height:10%"></div>
-    </div>
-    <div class="chart-labels" id="chart-labels">
-      <span>H-6</span><span>H-5</span><span>H-4</span>
-      <span>H-3</span><span>H-2</span><span>H-1</span><span>Now</span>
-    </div>
-  </div>
+  <!-- RIGHT -->
+  <div id="rc">
 
-  <!-- Controls -->
-  <div class="control-row">
-    <button class="btn" onclick="loadAll()">⟳ ACTUALISER</button>
-    <button class="btn active" id="auto-btn" onclick="toggleAuto()">◉ AUTO: ON</button>
-    <button class="btn" onclick="clearStats()">✕ RESET VUE</button>
-    <div class="refresh-info">Prochain refresh dans <span id="countdown">5</span>s</div>
-  </div>
+    <!-- Clients -->
+    <div class="rp">
+      <div class="rph">
+        <div class="pt">● CLIENTS CONNECTÉS</div>
+        <div class="rphc" id="cli-count">0 total</div>
+      </div>
+      <div id="cli-body"><div class="no-c">Aucun client — connecte via client.html</div></div>
+    </div>
 
-</main>
+    <!-- Pairs -->
+    <div class="rp">
+      <div class="rph">
+        <div class="pt">● JUMEAUX NUMÉRIQUES</div>
+        <div class="rphc" id="pairs-count">0</div>
+      </div>
+      <div id="pairs-body"><div style="padding:9px;color:var(--muted);font-size:10px">Aucune paire active</div></div>
+    </div>
+
+    <!-- Histo -->
+    <div class="rp" style="flex:1">
+      <div class="rph">
+        <div class="pt">● ACTIVITÉ RÉCENTE</div>
+        <div class="rphc" id="histo-count">0</div>
+      </div>
+      <div id="histo-body"><div style="padding:9px;color:var(--muted);font-size:10px">En attente...</div></div>
+    </div>
+
+  </div>
+</div>
 
 <script>
-  // ── Clock ──────────────────────────────────────────────
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('clock').textContent =
-      now.toLocaleTimeString('fr-FR', {hour12: false});
+// ════ STATE ════
+var ws = null, autoScroll = true, logCount = 0, filterText = '';
+var startTime = Date.now();
+var allLogs = [];          // {level, text, ts}
+var clients = {};          // id -> {state, status, twin, role}
+var pairs   = [];          // [{c1,c2}]
+var recent  = [];          // last events for histo
+
+// ════ CLOCK & UPTIME ════
+function pad(n){ return String(n).padStart(2,'0'); }
+function nowTS(){
+  var d=new Date();
+  return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+}
+setInterval(function(){
+  document.getElementById('clock').textContent = nowTS();
+  var e = Math.floor((Date.now()-startTime)/1000);
+  document.getElementById('s-up').textContent = pad(Math.floor(e/60))+':'+pad(e%60);
+}, 1000);
+
+// ════ OVERLAY ════
+function connectDashboard(){
+  var raw = document.getElementById('ov-addr').value.trim();
+  if(!raw) return;
+  var url;
+  if(raw.includes('trycloudflare')||raw.includes('ngrok')){
+    url = 'wss://' + raw.replace(/^wss?:\/\//,'');
+  } else {
+    var p = raw.split(':');
+    url = 'ws://' + p[0] + ':' + (p[1]||'8766');
   }
-  setInterval(updateClock, 1000);
-  updateClock();
+  doConnect(url);
+}
 
-  // ── State ─────────────────────────────────────────────
-  let autoRefresh = true;
-  let countdown = 5;
-  let countdownTimer;
-  let histoLines = [];
+function skipOverlay(){
+  document.getElementById('ov').style.display='none';
+  addLog('system','['+nowTS()+'] SYSTEM Mode démo — données simulées');
+  runDemo();
+}
 
-  // ── Load data/clients.txt ─────────────────────────────
-  async function loadClients() {
+// ════ WEBSOCKET ════
+function doConnect(url){
+  var dot = document.getElementById('srv-dot');
+  var badge = document.getElementById('conn-badge');
+  dot.className = 'blink';
+  badge.textContent = '● CONNEXION...';
+  badge.className = '';
+
+  ws = new WebSocket(url);
+
+  ws.onopen = function(){
+    document.getElementById('ov').style.display = 'none';
+    dot.className = 'on';
+    badge.textContent = '● CONNECTÉ';
+    badge.className = 'on';
+    document.getElementById('hdr-sub').textContent = 'Connecté → ' + url;
+  };
+
+  ws.onmessage = function(e){
     try {
-      const r = await fetch('data/clients.txt?_=' + Date.now());
-      if (!r.ok) return;
-      const text = await r.text();
-      const lines = text.trim().split('\n').filter(l => l.trim());
-
-      // skip header line
-      const data = lines.slice(1).filter(l => l.trim());
-
-      const tbody = document.getElementById('clients-body');
-      let onCount = 0;
-
-      if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;">
-          Aucun client — Connectez avec :<br>
-          <span style="color:var(--accent)">./client 127.0.0.1 9090</span>
-          puis <span style="color:var(--accent)">CONNECT alice pass123</span>
-        </td></tr>`;
-        document.getElementById('stat-clients').textContent = '0';
-        document.getElementById('stat-on').textContent = '0';
-        document.getElementById('stat-clients-detail').textContent = 'Aucun client actif';
-        return;
-      }
-
-      tbody.innerHTML = data.map((line, i) => {
-        const parts = line.trim().split(/\s+/);
-        const id = parts[0] || '?';
-        const nom = parts[1] || '—';
-        const etat = parts[2] || 'OFF';
-        const statut = parts[3] || '—';
-        const jumeau = parts[4] || '—';
-
-        const isOn = etat.toUpperCase() === 'ON';
-        if (isOn) onCount++;
-
-        const etatBadge = isOn
-          ? `<span class="badge badge-on">ON</span>`
-          : `<span class="badge badge-off">OFF</span>`;
-
-        const statutBadge = statut === 'SYNC'
-          ? `<span class="badge badge-synced">SYNC</span>`
-          : statut === 'WAIT'
-          ? `<span class="badge badge-wait">WAIT</span>`
-          : `<span style="color:var(--muted)">—</span>`;
-
-        return `<tr>
-          <td style="color:var(--accent);font-weight:700">${id}</td>
-          <td>${nom}</td>
-          <td>${etatBadge}</td>
-          <td>${statutBadge}</td>
-          <td style="color:var(--accent2)">${jumeau}</td>
-        </tr>`;
-      }).join('');
-
-      document.getElementById('stat-clients').textContent = data.length;
-      document.getElementById('stat-on').textContent = onCount;
-      document.getElementById('stat-clients-detail').textContent =
-        data.length === 1 ? '1 session active' : data.length + ' sessions actives';
-
-    } catch(e) {}
-  }
-
-  // ── Load data/pairs.txt ───────────────────────────────
-  async function loadPairs() {
-    try {
-      const r = await fetch('data/pairs.txt?_=' + Date.now());
-      if (!r.ok) return;
-      const text = await r.text();
-      const lines = text.trim().split('\n').filter(l => l.trim());
-
-      // skip header
-      const data = lines.slice(1).filter(l => l.trim());
-
-      const container = document.getElementById('pairs-container');
-
-      if (data.length === 0) {
-        container.innerHTML = '<div class="no-data">Aucune paire<br>Utilisez <span style="color:var(--accent)">SYNC</span></div>';
-        document.getElementById('stat-pairs').textContent = '0';
-        return;
-      }
-
-      container.innerHTML = data.map(line => {
-        const parts = line.trim().split(/\s+/);
-        const c1 = parts[0] || '?';
-        const c2 = parts[1] || '?';
-        return `<div class="pair-item">
-          <div class="pair-node">${c1}</div>
-          <div class="pair-arrow">⟷</div>
-          <div class="pair-node">${c2}</div>
-          <div class="pair-status"><span class="badge badge-synced">SYNC</span></div>
-        </div>`;
-      }).join('');
-
-      document.getElementById('stat-pairs').textContent = data.length;
-
-    } catch(e) {}
-  }
-
-  // ── Load data/histo.txt ───────────────────────────────
-  async function loadHisto() {
-    try {
-      const r = await fetch('data/histo.txt?_=' + Date.now());
-      if (!r.ok) return;
-      const text = await r.text();
-      const lines = text.trim().split('\n').filter(l => l.trim());
-
-      document.getElementById('stat-events').textContent = lines.length;
-
-      const container = document.getElementById('log-container');
-
-      if (lines.length === 0) {
-        container.innerHTML = '<div style="color:var(--muted);font-family:\'Share Tech Mono\',monospace;font-size:0.72rem;padding:20px;text-align:center">En attente d\'événements...</div>';
-        return;
-      }
-
-      // Show last 50 lines, newest last
-      const recent = lines.slice(-50);
-
-      container.innerHTML = recent.map(line => {
-        let level = 'info', levelText = 'INFO ';
-        if (line.includes('ERR') || line.includes('FAIL') || line.includes('ERROR')) { level = 'err'; levelText = 'ERR  '; }
-        else if (line.includes('WARN') || line.includes('DISC')) { level = 'warn'; levelText = 'WARN '; }
-
-        // Try to parse time from line
-        const timeMatch = line.match(/\[(\d{2}:\d{2}:\d{2})\]/);
-        const time = timeMatch ? timeMatch[1] : '';
-        const msg = timeMatch ? line.replace(timeMatch[0], '').trim() : line;
-
-        return `<div class="log-line">
-          <span class="log-time">${time}</span>
-          <span class="log-level-${level}">${levelText}</span>
-          <span class="log-msg">${msg}</span>
-        </div>`;
-      }).join('');
-
-      // Auto-scroll to bottom
-      container.scrollTop = container.scrollHeight;
-
-      // Update chart from histo
-      updateChart(lines);
-
-    } catch(e) {}
-  }
-
-  // ── Update activity bars from histo ──────────────────
-  function updateChart(lines) {
-    const now = new Date();
-    const buckets = Array(7).fill(0);
-
-    lines.forEach(line => {
-      const m = line.match(/\[(\d{2}):(\d{2}):\d{2}\]/);
-      if (!m) return;
-      const h = parseInt(m[1]);
-      const diff = now.getHours() - h;
-      const idx = 6 - diff;
-      if (idx >= 0 && idx < 7) buckets[idx]++;
-    });
-
-    const max = Math.max(...buckets, 1);
-    const bars = document.querySelectorAll('.mini-chart .bar');
-    bars.forEach((bar, i) => {
-      const pct = Math.max(5, Math.round((buckets[i] / max) * 100));
-      bar.style.height = pct + '%';
-      bar.title = buckets[i] + ' événements';
-    });
-  }
-
-  // ── Load all ──────────────────────────────────────────
-  async function loadAll() {
-    await Promise.all([loadClients(), loadPairs(), loadHisto()]);
-  }
-
-  // ── Auto refresh ──────────────────────────────────────
-  function startCountdown() {
-    clearInterval(countdownTimer);
-    countdown = 5;
-    document.getElementById('countdown').textContent = countdown;
-
-    countdownTimer = setInterval(() => {
-      if (!autoRefresh) return;
-      countdown--;
-      document.getElementById('countdown').textContent = countdown;
-      if (countdown <= 0) {
-        loadAll();
-        countdown = 5;
-      }
-    }, 1000);
-  }
-
-  function toggleAuto() {
-    autoRefresh = !autoRefresh;
-    const btn = document.getElementById('auto-btn');
-    if (autoRefresh) {
-      btn.textContent = '◉ AUTO: ON';
-      btn.classList.add('active');
-      startCountdown();
-    } else {
-      btn.textContent = '○ AUTO: OFF';
-      btn.classList.remove('active');
+      var msg = JSON.parse(e.data);
+      if(msg.type === 'log') processLog(msg.level, msg.text);
+    } catch(ex){
+      processLog('info', e.data);
     }
+  };
+
+  ws.onclose = function(){
+    dot.className = '';
+    badge.textContent = '● DÉCONNECTÉ';
+    badge.className = '';
+    addLog('error','['+nowTS()+'] BRIDGE Connexion perdue — tentative dans 4s...');
+    setTimeout(function(){ doConnect(url); }, 4000);
+  };
+
+  ws.onerror = function(){
+    addLog('error','['+nowTS()+'] BRIDGE Erreur — vérifiez que bridge.py est lancé');
+  };
+}
+
+// ════ LOG PROCESSING ════
+function processLog(level, text){
+  logCount++;
+  document.getElementById('s-logs-c').textContent = logCount + ' logs reçus';
+  document.getElementById('s-evts').textContent = logCount;
+  parseEvent(text);
+  addLog(level, text);
+}
+
+// ── Parsing des événements serveur C ──
+// Formats exacts issus de server.c :
+//   [HH:MM:SS] INFO  Nouveau client enregistré : ID=X IP=Y
+//   [HH:MM:SS] INFO  Client X connecté (IP) — rôle Y
+//   [HH:MM:SS] INFO  Client X → STATE Y
+//   [HH:MM:SS] INFO  Paire créée : X ↔ Y
+//   [HH:MM:SS] INFO  Client X → MSG à client Y : texte
+//   [HH:MM:SS] INFO  Client X déconnecté
+//   [HH:MM:SS] INFO  Reçu [CMD] de client X
+function parseEvent(text){
+  var m;
+
+  // Nouveau client enregistré
+  m = text.match(/Nouveau client enregistr[eé].*ID=(\d+)\s+IP=([\d.]+)/);
+  if(m){
+    var id=parseInt(m[1]), ip=m[2];
+    if(!clients[id]) clients[id]={state:'OFF',status:'connecte',twin:null,role:'user',ip:ip};
+    clients[id].status='connecte';
+    recent.unshift({ts:nowTS(),text:'Client #'+id+' enregistré ('+ip+')'});
+    updateCli(); return;
   }
 
-  function clearStats() {
-    document.getElementById('stat-clients').textContent = '0';
-    document.getElementById('stat-pairs').textContent = '0';
-    document.getElementById('stat-on').textContent = '0';
-    document.getElementById('stat-events').textContent = '0';
+  // Client connecté + rôle
+  m = text.match(/Client (\d+) connect[eé].*?r[oô]le (\w+)/);
+  if(m){
+    var id=parseInt(m[1]);
+    if(!clients[id]) clients[id]={state:'OFF',status:'connecte',twin:null};
+    clients[id].status='connecte';
+    clients[id].role=m[2];
+    recent.unshift({ts:nowTS(),text:'Client #'+id+' auth ('+m[2]+')'});
+    updateCli(); return;
   }
 
-  // ── Init ──────────────────────────────────────────────
-  loadAll();
-  startCountdown();
+  // STATE change
+  m = text.match(/Client (\d+) [→>] STATE (ON|OFF)/);
+  if(m){
+    var id=parseInt(m[1]);
+    if(!clients[id]) clients[id]={state:'OFF',status:'connecte',twin:null};
+    clients[id].state=m[2];
+    recent.unshift({ts:nowTS(),text:'Client #'+id+' STATE '+m[2]});
+    updateCli(); return;
+  }
+
+  // Paire créée — format "Paire créée : X ↔ Y"
+  m = text.match(/Paire cr[eé][eé]e\s*:\s*(\d+)\s*[↔<>-]+\s*(\d+)/);
+  if(m){
+    var c1=parseInt(m[1]),c2=parseInt(m[2]);
+    var exists=pairs.some(function(p){return(p.c1===c1&&p.c2===c2)||(p.c1===c2&&p.c2===c1);});
+    if(!exists) pairs.push({c1:c1,c2:c2});
+    if(!clients[c1]) clients[c1]={state:'OFF',status:'connecte',twin:c2};
+    if(!clients[c2]) clients[c2]={state:'OFF',status:'connecte',twin:c1};
+    clients[c1].twin=c2; clients[c2].twin=c1;
+    document.getElementById('s-pairs').textContent=pairs.length;
+    document.getElementById('pairs-count').textContent=pairs.length;
+    recent.unshift({ts:nowTS(),text:'Paire #'+c1+' ↔ #'+c2+' créée'});
+    updatePairs(); updateCli(); return;
+  }
+
+  // MSG envoyé
+  m = text.match(/Client (\d+) [→>] MSG.*client (\d+)\s*:\s*(.+)/);
+  if(m){
+    recent.unshift({ts:nowTS(),text:'MSG #'+m[1]+' → #'+m[2]+' : '+m[3].substring(0,30)});
+    updateHisto(); return;
+  }
+
+  // Déconnexion
+  m = text.match(/Client (\d+) d[eé]connect[eé]/);
+  if(m){
+    var id=parseInt(m[1]);
+    if(clients[id]) clients[id].status='deconnecte';
+    recent.unshift({ts:nowTS(),text:'Client #'+id+' déconnecté'});
+    updateCli(); return;
+  }
+
+  // Watchdog / redémarrage
+  if(/watchdog|redémarr|crash/i.test(text)){
+    recent.unshift({ts:nowTS(),text:text.replace(/^\[[\d:]+\]\s*(INFO|WARN|ERROR)\s*/,'').substring(0,55)});
+    updateHisto(); return;
+  }
+}
+
+// ════ LOG DISPLAY ════
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function addLog(level, text){
+  var empty = document.getElementById('ls-empty');
+  if(empty) empty.remove();
+  allLogs.push({level:level,text:text});
+  if(allLogs.length>600) allLogs.shift();
+  if(filterText && text.toLowerCase().indexOf(filterText.toLowerCase())===-1) return;
+  renderLine(level, text);
+}
+
+function renderLine(level, text){
+  var ls = document.getElementById('ls');
+  var div = document.createElement('div');
+  div.className = 'le '+(level||'info');
+  var tm = text.match(/\[(\d{1,2}:\d{2}:\d{2})\]/);
+  var tsStr = tm ? tm[1] : nowTS();
+  var display = text.replace(/^\[\d{1,2}:\d{2}:\d{2}\]\s*(INFO|WARN|ERROR)\s*/,'');
+  div.innerHTML='<span class="le-ts">'+tsStr+'</span><span class="le-txt">'+escH(display)+'</span>';
+  ls.appendChild(div);
+  if(autoScroll) ls.scrollTop=ls.scrollHeight;
+  while(ls.children.length>400) ls.removeChild(ls.firstChild);
+}
+
+function clearLogs(){
+  document.getElementById('ls').innerHTML=''; allLogs=[];
+}
+
+function toggleAS(){
+  autoScroll=!autoScroll;
+  var b=document.getElementById('asbtn');
+  b.textContent=autoScroll?'AUTO▼':'PAUSE';
+  b.style.color=autoScroll?'var(--cyan)':'var(--amber)';
+}
+
+function applyFilter(val){
+  filterText=val;
+  var ls=document.getElementById('ls'); ls.innerHTML='';
+  allLogs.forEach(function(l){
+    if(!val||l.text.toLowerCase().indexOf(val.toLowerCase())!==-1) renderLine(l.level,l.text);
+  });
+}
+
+// ════ PANELS ════
+function updateCli(){
+  var active=Object.keys(clients).filter(function(id){return clients[id].status==='connecte';});
+  document.getElementById('s-cli').textContent=active.length;
+  document.getElementById('cli-count').textContent=Object.keys(clients).length+' total';
+  document.getElementById('s-cli-s').textContent=active.length===0?'Aucun actif':active.length+' actif(s)';
+
+  var body=document.getElementById('cli-body');
+  if(Object.keys(clients).length===0){
+    body.innerHTML='<div class="no-c">Aucun client — connecte via client.html</div>';
+    updateHisto(); return;
+  }
+  var html='<table id="ctb"><thead><tr><th>ID</th><th>ÉTAT</th><th>STATUT</th><th>JUMEAU</th></tr></thead><tbody>';
+  Object.keys(clients).sort(function(a,b){return parseInt(a)-parseInt(b);}).forEach(function(id){
+    var c=clients[id];
+    html+='<tr>'
+      +'<td class="td-id">#'+id+'</td>'
+      +'<td class="'+(c.state==='ON'?'ton':'toff')+'">'+c.state+'</td>'
+      +'<td class="'+(c.status==='connecte'?'tcon':'tcdis')+'">'+c.status+'</td>'
+      +'<td class="ttwin">'+(c.twin?'#'+c.twin:'—')+'</td>'
+      +'</tr>';
+  });
+  html+='</tbody></table>';
+  body.innerHTML=html;
+  updateHisto();
+}
+
+function updatePairs(){
+  var body=document.getElementById('pairs-body');
+  if(pairs.length===0){
+    body.innerHTML='<div style="padding:9px;color:var(--muted);font-size:10px">Aucune paire active</div>';
+    return;
+  }
+  body.innerHTML=pairs.map(function(p){
+    return '<div class="pair-row"><span class="pid">#'+p.c1+'</span><span class="parr">⟷</span><span class="pid">#'+p.c2+'</span></div>';
+  }).join('');
+}
+
+function updateHisto(){
+  if(recent.length===0) return;
+  if(recent.length>40) recent=recent.slice(0,40);
+  document.getElementById('histo-count').textContent=recent.length;
+  document.getElementById('histo-body').innerHTML=recent.slice(0,25).map(function(e){
+    return '<div class="hr"><span class="hts">'+e.ts+'</span>'+escH(e.text.substring(0,55))+'</div>';
+  }).join('');
+}
+
+// ════ DEMO MODE ════
+var DEMO=[
+  ['info',    '[08:00:01] INFO  Serveur TCP démarré sur le port 9090'],
+  ['info',    '[08:00:01] INFO  Chargement : 0 client(s) depuis ../data/clients.txt'],
+  ['success', '[08:00:03] INFO  Nouveau client enregistré : ID=1 IP=192.168.1.5'],
+  ['info',    '[08:00:03] INFO  Thread démarré pour 192.168.1.5'],
+  ['success', '[08:00:03] INFO  Client 1 connecté (192.168.1.5) — rôle user'],
+  ['success', '[08:00:08] INFO  Nouveau client enregistré : ID=2 IP=192.168.1.42'],
+  ['success', '[08:00:08] INFO  Client 2 connecté (192.168.1.42) — rôle user'],
+  ['info',    '[08:00:09] INFO  Reçu [SYNC 2] de client 1'],
+  ['sync',    '[08:00:09] INFO  Paire créée : 1 ↔ 2'],
+  ['state',   '[08:00:12] INFO  Client 1 → STATE ON'],
+  ['msg',     '[08:00:18] INFO  Client 1 → MSG à client 2 : Salut jumeau !'],
+  ['state',   '[08:00:22] INFO  Client 2 → STATE OFF'],
+  ['warn',    '[08:00:28] WARN  Client 1 → STATE ON twin=2 hors-ligne'],
+  ['success', '[08:00:35] INFO  Nouveau client enregistré : ID=3 IP=192.168.1.77'],
+  ['success', '[08:00:35] INFO  Client 3 connecté (192.168.1.77) — rôle admin'],
+  ['info',    '[08:00:38] INFO  Reçu [LIST] de client 3'],
+  ['disconnect','[08:00:45] INFO  Client 2 déconnecté'],
+  ['info',    '[08:01:00] INFO  Reçu [PING] de client 1'],
+  ['msg',     '[08:01:05] INFO  Client 3 → MSG à client 1 : Message admin'],
+];
+var di=0;
+function runDemo(){
+  if(di>=DEMO.length) di=0;
+  var l=DEMO[di++];
+  processLog(l[0],l[1]);
+  setTimeout(runDemo, 900+Math.random()*700);
+}
 </script>
 </body>
 </html>
